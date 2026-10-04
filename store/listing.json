@@ -1,0 +1,40 @@
+{
+  "name": "Anchor — Protected Workspaces",
+  "short_name": "Anchor",
+  "version": "2.0.0",
+  "default_language": "en",
+  "short_description": "Keep dashboards in place. Route links to tabs or separate windows and arrange saved workspaces. Local only, no tracking.",
+  "suggested_category": "Productivity / workflow and planning",
+  "publisher_display_name": "Matt Richmond",
+  "support_email": "hello@mattrichmond.ca",
+  "single_purpose": "Keep chosen working webpages in place by routing eligible exploration elsewhere and arranging those protected pages into small, local dashboard workspaces.",
+  "uses_remote_code": false,
+  "developer_side_data_collection": false,
+  "runtime_analytics": false,
+  "privacy_policy_url": null,
+  "homepage_url": null,
+  "support_url": null,
+  "store_item_id": null,
+  "owner_required_fields": [
+    "Host the supplied website pages and enter their real URLs",
+    "Verify publisher account/contact and any required trader status",
+    "Choose distribution and pricing",
+    "Review and personally accept store terms/data-use certifications"
+  ],
+  "assets": {
+    "store_icon": "../extension/icons/128.png",
+    "small_promotional": "promotional/anchor-440x280.png",
+    "marquee": "promotional/anchor-1400x560.png",
+    "screenshots": [
+      "screenshots/01-protection-1280x800.png",
+      "screenshots/05-workspaces-1280x800.png",
+      "screenshots/06-layout-1280x800.png",
+      "screenshots/02-settings-1280x800.png",
+      "screenshots/04-welcome-1280x800.png"
+    ]
+  },
+  "optional_permissions": [
+    "system.display"
+  ],
+  "publication_status": "Prepared beta handoff; not submitted or approved"
+}

@@ -1,0 +1,1346 @@
+
+> anchor-tab-guard@2.0.0 test
+> node --test tests/unit/*.test.mjs
+
+TAP version 13
+# Subtest: web URL accepted: https://example.com/
+ok 1 - web URL accepted: https://example.com/
+  ---
+  duration_ms: 2.510738
+  type: 'test'
+  ...
+# Subtest: web URL accepted: http://localhost:3000/test
+ok 2 - web URL accepted: http://localhost:3000/test
+  ---
+  duration_ms: 0.221764
+  type: 'test'
+  ...
+# Subtest: web URL accepted: https://example.com/path?q=x\#part
+ok 3 - web URL accepted: https://example.com/path?q=x\#part
+  ---
+  duration_ms: 0.090372
+  type: 'test'
+  ...
+# Subtest: web URL accepted: https://127.0.0.1:4000/
+ok 4 - web URL accepted: https://127.0.0.1:4000/
+  ---
+  duration_ms: 0.085316
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: javascript:alert(1)
+ok 5 - unsafe or invalid URL rejected: javascript:alert(1)
+  ---
+  duration_ms: 0.196071
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: data:text/html,test
+ok 6 - unsafe or invalid URL rejected: data:text/html,test
+  ---
+  duration_ms: 0.10358
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: file:///test
+ok 7 - unsafe or invalid URL rejected: file:///test
+  ---
+  duration_ms: 0.070673
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: chrome://settings
+ok 8 - unsafe or invalid URL rejected: chrome://settings
+  ---
+  duration_ms: 0.072571
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: mailto:a@b.com
+ok 9 - unsafe or invalid URL rejected: mailto:a@b.com
+  ---
+  duration_ms: 0.238062
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: https://user:pass@example.com
+ok 10 - unsafe or invalid URL rejected: https://user:pass@example.com
+  ---
+  duration_ms: 0.323998
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: https://user@example.com
+ok 11 - unsafe or invalid URL rejected: https://user@example.com
+  ---
+  duration_ms: 0.120978
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: not a URL
+ok 12 - unsafe or invalid URL rejected: not a URL
+  ---
+  duration_ms: 0.095366
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: null
+ok 13 - unsafe or invalid URL rejected: null
+  ---
+  duration_ms: 0.04591
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: 42
+ok 14 - unsafe or invalid URL rejected: 42
+  ---
+  duration_ms: 0.040064
+  type: 'test'
+  ...
+# Subtest: unsafe or invalid URL rejected: https://example.com/xxxxxxxxxxxxxxxxxxxxxxxxx
+ok 15 - unsafe or invalid URL rejected: https://example.com/xxxxxxxxxxxxxxxxxxxxxxxxx
+  ---
+  duration_ms: 0.039652
+  type: 'test'
+  ...
+# Subtest: restricted page unsupported: chrome://extensions
+ok 16 - restricted page unsupported: chrome://extensions
+  ---
+  duration_ms: 0.092662
+  type: 'test'
+  ...
+# Subtest: restricted page unsupported: https://chromewebstore.google.com/detail/a
+ok 17 - restricted page unsupported: https://chromewebstore.google.com/detail/a
+  ---
+  duration_ms: 0.093464
+  type: 'test'
+  ...
+# Subtest: restricted page unsupported: https://chrome.google.com/webstore/detail/b
+ok 18 - restricted page unsupported: https://chrome.google.com/webstore/detail/b
+  ---
+  duration_ms: 0.1107
+  type: 'test'
+  ...
+# Subtest: ordinary http page supported
+ok 19 - ordinary http page supported
+  ---
+  duration_ms: 0.096006
+  type: 'test'
+  ...
+# Subtest: pinned tab active by default
+ok 20 - pinned tab active by default
+  ---
+  duration_ms: 0.395827
+  type: 'test'
+  ...
+# Subtest: unpinned tab stays native
+ok 21 - unpinned tab stays native
+  ---
+  duration_ms: 0.127734
+  type: 'test'
+  ...
+# Subtest: manual protection works on an unpinned tab
+ok 22 - manual protection works on an unpinned tab
+  ---
+  duration_ms: 0.176611
+  type: 'test'
+  ...
+# Subtest: manual off overrides automatic pin
+ok 23 - manual off overrides automatic pin
+  ---
+  duration_ms: 0.100744
+  type: 'test'
+  ...
+# Subtest: master off overrides manual
+ok 24 - master off overrides manual
+  ---
+  duration_ms: 0.163863
+  type: 'test'
+  ...
+# Subtest: site off overrides manual
+ok 25 - site off overrides manual
+  ---
+  duration_ms: 0.885973
+  type: 'test'
+  ...
+# Subtest: pause active before deadline
+ok 26 - pause active before deadline
+  ---
+  duration_ms: 0.612355
+  type: 'test'
+  ...
+# Subtest: pause expires at deadline
+ok 27 - pause expires at deadline
+  ---
+  duration_ms: 0.169256
+  type: 'test'
+  ...
+# Subtest: pinned auto can be disabled
+ok 28 - pinned auto can be disabled
+  ---
+  duration_ms: 0.190248
+  type: 'test'
+  ...
+# Subtest: explicit manual still active when auto pin disabled
+ok 29 - explicit manual still active when auto pin disabled
+  ---
+  duration_ms: 0.172872
+  type: 'test'
+  ...
+# Subtest: unsupported tab never active
+ok 30 - unsupported tab never active
+  ---
+  duration_ms: 0.224219
+  type: 'test'
+  ...
+# Subtest: tab mode beats site and default
+ok 31 - tab mode beats site and default
+  ---
+  duration_ms: 0.282002
+  type: 'test'
+  ...
+# Subtest: site mode beats default
+ok 32 - site mode beats default
+  ---
+  duration_ms: 0.168386
+  type: 'test'
+  ...
+# Subtest: site rule does not protect unpinned by itself
+ok 33 - site rule does not protect unpinned by itself
+  ---
+  duration_ms: 0.085945
+  type: 'test'
+  ...
+# Subtest: strict internal link branches
+ok 34 - strict internal link branches
+  ---
+  duration_ms: 0.25897
+  type: 'test'
+  ...
+# Subtest: strict external link branches
+ok 35 - strict external link branches
+  ---
+  duration_ms: 0.220072
+  type: 'test'
+  ...
+# Subtest: identical URL reload branches in strict mode
+ok 36 - identical URL reload branches in strict mode
+  ---
+  duration_ms: 0.17636
+  type: 'test'
+  ...
+# Subtest: native semantics: modified
+ok 37 - native semantics: modified
+  ---
+  duration_ms: 0.13426
+  type: 'test'
+  ...
+# Subtest: native semantics: download
+ok 38 - native semantics: download
+  ---
+  duration_ms: 0.091665
+  type: 'test'
+  ...
+# Subtest: native semantics: nativeTarget
+ok 39 - native semantics: nativeTarget
+  ---
+  duration_ms: 0.086805
+  type: 'test'
+  ...
+# Subtest: native semantics: sameDocument
+ok 40 - native semantics: sameDocument
+  ---
+  duration_ms: 0.219222
+  type: 'test'
+  ...
+# Subtest: inactive snapshot stays native
+ok 41 - inactive snapshot stays native
+  ---
+  duration_ms: 0.097934
+  type: 'test'
+  ...
+# Subtest: same origin allows same origin
+ok 42 - same origin allows same origin
+  ---
+  duration_ms: 0.089538
+  type: 'test'
+  ...
+# Subtest: same origin branches different origin: http://app.example.com/customer
+ok 43 - same origin branches different origin: http://app.example.com/customer
+  ---
+  duration_ms: 0.124878
+  type: 'test'
+  ...
+# Subtest: same origin branches different origin: https://app.example.com:8443/customer
+ok 44 - same origin branches different origin: https://app.example.com:8443/customer
+  ---
+  duration_ms: 0.06524
+  type: 'test'
+  ...
+# Subtest: same origin branches different origin: https://child.app.example.com/customer
+ok 45 - same origin branches different origin: https://child.app.example.com/customer
+  ---
+  duration_ms: 0.055833
+  type: 'test'
+  ...
+# Subtest: same origin branches different origin: https://other.example.com/customer
+ok 46 - same origin branches different origin: https://other.example.com/customer
+  ---
+  duration_ms: 0.055709
+  type: 'test'
+  ...
+# Subtest: home allows exact saved URL
+ok 47 - home allows exact saved URL
+  ---
+  duration_ms: 0.114307
+  type: 'test'
+  ...
+# Subtest: home branches changed route
+ok 48 - home branches changed route
+  ---
+  duration_ms: 0.090892
+  type: 'test'
+  ...
+# Subtest: home branches changed search
+ok 49 - home branches changed search
+  ---
+  duration_ms: 0.088528
+  type: 'test'
+  ...
+# Subtest: hash links native by default
+ok 50 - hash links native by default
+  ---
+  duration_ms: 0.082849
+  type: 'test'
+  ...
+# Subtest: hash removal native by default
+ok 51 - hash removal native by default
+  ---
+  duration_ms: 0.083731
+  type: 'test'
+  ...
+# Subtest: hash branching opt in
+ok 52 - hash branching opt in
+  ---
+  duration_ms: 0.07414
+  type: 'test'
+  ...
+# Subtest: different page same hash is not a section link
+ok 53 - different page same hash is not a section link
+  ---
+  duration_ms: 0.103782
+  type: 'test'
+  ...
+# Subtest: GET forms native by default
+ok 54 - GET forms native by default
+  ---
+  duration_ms: 0.086999
+  type: 'test'
+  ...
+# Subtest: GET forms branch when enabled
+ok 55 - GET forms branch when enabled
+  ---
+  duration_ms: 0.180382
+  type: 'test'
+  ...
+# Subtest: non-GET method stays native: post
+ok 56 - non-GET method stays native: post
+  ---
+  duration_ms: 0.090465
+  type: 'test'
+  ...
+# Subtest: non-GET method stays native: dialog
+ok 57 - non-GET method stays native: dialog
+  ---
+  duration_ms: 0.049785
+  type: 'test'
+  ...
+# Subtest: non-GET method stays native: POST
+ok 58 - non-GET method stays native: POST
+  ---
+  duration_ms: 0.047605
+  type: 'test'
+  ...
+# Subtest: non-GET method stays native: put
+ok 59 - non-GET method stays native: put
+  ---
+  duration_ms: 0.055941
+  type: 'test'
+  ...
+# Subtest: non-GET method stays native: undefined
+ok 60 - non-GET method stays native: undefined
+  ---
+  duration_ms: 0.053016
+  type: 'test'
+  ...
+# Subtest: invalid settings throw
+ok 61 - invalid settings throw
+  ---
+  duration_ms: 0.208894
+  type: 'test'
+  ...
+# Subtest: invalid boolean rejected
+ok 62 - invalid boolean rejected
+  ---
+  duration_ms: 0.220822
+  type: 'test'
+  ...
+# Subtest: unknown mode rejected
+ok 63 - unknown mode rejected
+  ---
+  duration_ms: 0.141115
+  type: 'test'
+  ...
+# Subtest: future schema rejected
+ok 64 - future schema rejected
+  ---
+  duration_ms: 0.123678
+  type: 'test'
+  ...
+# Subtest: normalizes origin and strips paths
+ok 65 - normalizes origin and strips paths
+  ---
+  duration_ms: 0.236182
+  type: 'test'
+  ...
+# Subtest: duplicate normalized rules rejected
+ok 66 - duplicate normalized rules rejected
+  ---
+  duration_ms: 0.170169
+  type: 'test'
+  ...
+# Subtest: wildcard rule rejected
+ok 67 - wildcard rule rejected
+  ---
+  duration_ms: 0.156913
+  type: 'test'
+  ...
+# Subtest: invalid rule mode rejected
+ok 68 - invalid rule mode rejected
+  ---
+  duration_ms: 0.167795
+  type: 'test'
+  ...
+# Subtest: rule count bounded
+ok 69 - rule count bounded
+  ---
+  duration_ms: 0.158645
+  type: 'test'
+  ...
+# Subtest: unknown imported fields dropped
+ok 70 - unknown imported fields dropped
+  ---
+  duration_ms: 0.120041
+  type: 'test'
+  ...
+# Subtest: settings copies do not mutate defaults
+ok 71 - settings copies do not mutate defaults
+  ---
+  duration_ms: 0.130696
+  type: 'test'
+  ...
+# Subtest: branch respects pinned block boundary
+ok 72 - branch respects pinned block boundary
+  ---
+  duration_ms: 0.226574
+  type: 'test'
+  ...
+# Subtest: branch follows prior branch
+ok 73 - branch follows prior branch
+  ---
+  duration_ms: 0.114324
+  type: 'test'
+  ...
+# Subtest: branch placement end
+ok 74 - branch placement end
+  ---
+  duration_ms: 0.110704
+  type: 'test'
+  ...
+# Subtest: unpinned manual source placement
+ok 75 - unpinned manual source placement
+  ---
+  duration_ms: 0.103292
+  type: 'test'
+  ...
+# Subtest: closed prior branch ignored
+ok 76 - closed prior branch ignored
+  ---
+  duration_ms: 0.096206
+  type: 'test'
+  ...
+# Subtest: recovery candidate: typed
+ok 77 - recovery candidate: typed
+  ---
+  duration_ms: 0.153833
+  type: 'test'
+  ...
+# Subtest: recovery candidate: auto_bookmark
+ok 78 - recovery candidate: auto_bookmark
+  ---
+  duration_ms: 0.078843
+  type: 'test'
+  ...
+# Subtest: recovery candidate: generated
+ok 79 - recovery candidate: generated
+  ---
+  duration_ms: 0.082577
+  type: 'test'
+  ...
+# Subtest: recovery candidate: keyword
+ok 80 - recovery candidate: keyword
+  ---
+  duration_ms: 0.077806
+  type: 'test'
+  ...
+# Subtest: recovery candidate: keyword_generated
+ok 81 - recovery candidate: keyword_generated
+  ---
+  duration_ms: 0.072312
+  type: 'test'
+  ...
+# Subtest: recovery excludes: link
+ok 82 - recovery excludes: link
+  ---
+  duration_ms: 0.147459
+  type: 'test'
+  ...
+# Subtest: recovery excludes: form_submit
+ok 83 - recovery excludes: form_submit
+  ---
+  duration_ms: 0.13039
+  type: 'test'
+  ...
+# Subtest: recovery excludes: reload
+ok 84 - recovery excludes: reload
+  ---
+  duration_ms: 0.114907
+  type: 'test'
+  ...
+# Subtest: recovery excludes: auto_subframe
+ok 85 - recovery excludes: auto_subframe
+  ---
+  duration_ms: 0.07078
+  type: 'test'
+  ...
+# Subtest: recovery excludes: start_page
+ok 86 - recovery excludes: start_page
+  ---
+  duration_ms: 0.084643
+  type: 'test'
+  ...
+# Subtest: recovery excludes qualifier forward_back
+ok 87 - recovery excludes qualifier forward_back
+  ---
+  duration_ms: 0.166036
+  type: 'test'
+  ...
+# Subtest: recovery excludes qualifier server_redirect
+ok 88 - recovery excludes qualifier server_redirect
+  ---
+  duration_ms: 0.091102
+  type: 'test'
+  ...
+# Subtest: recovery excludes qualifier client_redirect
+ok 89 - recovery excludes qualifier client_redirect
+  ---
+  duration_ms: 0.080458
+  type: 'test'
+  ...
+# Subtest: recovery excludes iframes
+ok 90 - recovery excludes iframes
+  ---
+  duration_ms: 0.11618
+  type: 'test'
+  ...
+# Subtest: recovery disabled by default
+ok 91 - recovery disabled by default
+  ---
+  duration_ms: 0.176548
+  type: 'test'
+  ...
+# Subtest: recovery opt in
+ok 92 - recovery opt in
+  ---
+  duration_ms: 0.145332
+  type: 'test'
+  ...
+# Subtest: circuit breaker disarms recovery
+ok 93 - circuit breaker disarms recovery
+  ---
+  duration_ms: 0.183943
+  type: 'test'
+  ...
+# Subtest: worker: verified live pinned tab opens one branch
+ok 94 - worker: verified live pinned tab opens one branch
+  ---
+  duration_ms: 7.856501
+  type: 'test'
+  ...
+# Subtest: worker: source tab is browser-derived, not content-supplied tabId
+ok 95 - worker: source tab is browser-derived, not content-supplied tabId
+  ---
+  duration_ms: 1.679398
+  type: 'test'
+  ...
+# Subtest: worker: stale claimed pin state does not override live Chrome tab
+ok 96 - worker: stale claimed pin state does not override live Chrome tab
+  ---
+  duration_ms: 1.417798
+  type: 'test'
+  ...
+# Subtest: worker: duplicate gesture message does not repeat tabs.create
+ok 97 - worker: duplicate gesture message does not repeat tabs.create
+  ---
+  duration_ms: 4.303158
+  type: 'test'
+  ...
+# Subtest: worker: two separate gestures to same URL are not merged
+ok 98 - worker: two separate gestures to same URL are not merged
+  ---
+  duration_ms: 2.366526
+  type: 'test'
+  ...
+# Subtest: worker: concurrent duplicate messages serialize per tab
+ok 99 - worker: concurrent duplicate messages serialize per tab
+  ---
+  duration_ms: 1.898143
+  type: 'test'
+  ...
+# Subtest: worker: uncertain creation is not automatically retried
+ok 100 - worker: uncertain creation is not automatically retried
+  ---
+  duration_ms: 1.573237
+  type: 'test'
+  ...
+# Subtest: worker: later deliberate retry with a new gesture is permitted
+ok 101 - worker: later deliberate retry with a new gesture is permitted
+  ---
+  duration_ms: 1.562825
+  type: 'test'
+  ...
+# Subtest: worker: replaced document cannot open a tab
+ok 102 - worker: replaced document cannot open a tab
+  ---
+  duration_ms: 1.915097
+  type: 'test'
+  ...
+# Subtest: worker: cached/prerendered document cannot open a tab
+ok 103 - worker: cached/prerendered document cannot open a tab
+  ---
+  duration_ms: 1.798528
+  type: 'test'
+  ...
+# Subtest: worker: missing document identity rejected
+ok 104 - worker: missing document identity rejected
+  ---
+  duration_ms: 1.157271
+  type: 'test'
+  ...
+# Subtest: worker: wrong extension identity rejected
+ok 105 - worker: wrong extension identity rejected
+  ---
+  duration_ms: 1.016646
+  type: 'test'
+  ...
+# Subtest: worker: arbitrary page cannot invoke privileged UI action
+ok 106 - worker: arbitrary page cannot invoke privileged UI action
+  ---
+  duration_ms: 0.747902
+  type: 'test'
+  ...
+# Subtest: worker: extension pages outside ui/ cannot write settings
+ok 107 - worker: extension pages outside ui/ cannot write settings
+  ---
+  duration_ms: 1.118
+  type: 'test'
+  ...
+# Subtest: worker: malformed gesture identifiers rejected
+ok 108 - worker: malformed gesture identifiers rejected
+  ---
+  duration_ms: 1.487065
+  type: 'test'
+  ...
+# Subtest: worker: unsafe destination cannot open extension privileged URL
+ok 109 - worker: unsafe destination cannot open extension privileged URL
+  ---
+  duration_ms: 2.263724
+  type: 'test'
+  ...
+# Subtest: worker: POST form request never branches
+ok 110 - worker: POST form request never branches
+  ---
+  duration_ms: 1.49068
+  type: 'test'
+  ...
+# Subtest: worker: setting import validates future schema
+ok 111 - worker: setting import validates future schema
+  ---
+  duration_ms: 0.78676
+  type: 'test'
+  ...
+# Subtest: worker: UI manual protection activates an unpinned tab
+ok 112 - worker: UI manual protection activates an unpinned tab
+  ---
+  duration_ms: 1.719114
+  type: 'test'
+  ...
+# Subtest: worker: UI pause and resume publish correct states
+ok 113 - worker: UI pause and resume publish correct states
+  ---
+  duration_ms: 2.468219
+  type: 'test'
+  ...
+# Subtest: worker: home mode captures live current URL
+ok 114 - worker: home mode captures live current URL
+  ---
+  duration_ms: 0.846328
+  type: 'test'
+  ...
+# Subtest: worker: created tab has no explicit opener capability
+ok 115 - worker: created tab has no explicit opener capability
+  ---
+  duration_ms: 0.851393
+  type: 'test'
+  ...
+# Subtest: worker: local settings persist without a sync store
+ok 116 - worker: local settings persist without a sync store
+  ---
+  duration_ms: 0.948983
+  type: 'test'
+  ...
+# Subtest: worker: serialized settings writes preserve independent fields
+ok 117 - worker: serialized settings writes preserve independent fields
+  ---
+  duration_ms: 0.781407
+  type: 'test'
+  ...
+# Subtest: worker: reset removes manual override and origin exceptions
+ok 118 - worker: reset removes manual override and origin exceptions
+  ---
+  duration_ms: 3.588462
+  type: 'test'
+  ...
+# Subtest: worker: gesture journal is bounded under repeated clicks
+ok 119 - worker: gesture journal is bounded under repeated clicks
+  ---
+  duration_ms: 69.019275
+  type: 'test'
+  ...
+# Subtest: workspace schema accepts a complete definition and drops untrusted runtime fields
+ok 120 - workspace schema accepts a complete definition and drops untrusted runtime fields
+  ---
+  duration_ms: 4.226492
+  type: 'test'
+  ...
+# Subtest: workspace rejects unsafe or restricted URL javascript:alert(1)
+ok 121 - workspace rejects unsafe or restricted URL javascript:alert(1)
+  ---
+  duration_ms: 0.421579
+  type: 'test'
+  ...
+# Subtest: workspace rejects unsafe or restricted URL chrome://settings/
+ok 122 - workspace rejects unsafe or restricted URL chrome://settings/
+  ---
+  duration_ms: 0.693827
+  type: 'test'
+  ...
+# Subtest: workspace rejects unsafe or restricted URL https://user:pass@example.com/
+ok 123 - workspace rejects unsafe or restricted URL https://user:pass@example.com/
+  ---
+  duration_ms: 0.211547
+  type: 'test'
+  ...
+# Subtest: workspace rejects unsafe or restricted URL file:///tmp/test
+ok 124 - workspace rejects unsafe or restricted URL file:///tmp/test
+  ---
+  duration_ms: 0.253954
+  type: 'test'
+  ...
+# Subtest: workspace rejects unsafe or restricted URL data:text/html,test
+ok 125 - workspace rejects unsafe or restricted URL data:text/html,test
+  ---
+  duration_ms: 0.172425
+  type: 'test'
+  ...
+# Subtest: workspace rejects unsafe or restricted URL https://chromewebstore.google.com/
+ok 126 - workspace rejects unsafe or restricted URL https://chromewebstore.google.com/
+  ---
+  duration_ms: 0.174662
+  type: 'test'
+  ...
+# Subtest: workspace enforces page limit: 0
+ok 127 - workspace enforces page limit: 0
+  ---
+  duration_ms: 0.214352
+  type: 'test'
+  ...
+# Subtest: workspace enforces page limit: 5
+ok 128 - workspace enforces page limit: 5
+  ---
+  duration_ms: 0.48616
+  type: 'test'
+  ...
+# Subtest: workspace rejects duplicate anchor identity
+ok 129 - workspace rejects duplicate anchor identity
+  ---
+  duration_ms: 1.106819
+  type: 'test'
+  ...
+# Subtest: workspace normalizes only URL syntax, not meaningful query or fragment
+ok 130 - workspace normalizes only URL syntax, not meaningful query or fragment
+  ---
+  duration_ms: 0.401153
+  type: 'test'
+  ...
+# Subtest: workspace allows localhost http for development dashboards
+ok 131 - workspace allows localhost http for development dashboards
+  ---
+  duration_ms: 0.195087
+  type: 'test'
+  ...
+# Subtest: reserved workspace cannot route into itself
+ok 132 - reserved workspace cannot route into itself
+  ---
+  duration_ms: 0.167081
+  type: 'test'
+  ...
+# Subtest: workspace library rejects future schema and duplicate workspaces
+ok 133 - workspace library rejects future schema and duplicate workspaces
+  ---
+  duration_ms: 0.366142
+  type: 'test'
+  ...
+# Subtest: workspace library limits persistent definitions to twenty
+ok 134 - workspace library limits persistent definitions to twenty
+  ---
+  duration_ms: 0.207215
+  type: 'test'
+  ...
+# Subtest: 2x2 layout fits exact work area with 12px gutters
+ok 135 - 2x2 layout fits exact work area with 12px gutters
+  ---
+  duration_ms: 1.510466
+  type: 'test'
+  ...
+# Subtest: layout collection x 1 stays in a large work area
+ok 136 - layout collection x 1 stays in a large work area
+  ---
+  duration_ms: 0.207772
+  type: 'test'
+  ...
+# Subtest: layout collection x 2 stays in a large work area
+ok 137 - layout collection x 2 stays in a large work area
+  ---
+  duration_ms: 0.288274
+  type: 'test'
+  ...
+# Subtest: layout collection x 3 stays in a large work area
+ok 138 - layout collection x 3 stays in a large work area
+  ---
+  duration_ms: 0.102205
+  type: 'test'
+  ...
+# Subtest: layout collection x 4 stays in a large work area
+ok 139 - layout collection x 4 stays in a large work area
+  ---
+  duration_ms: 0.095572
+  type: 'test'
+  ...
+# Subtest: layout columns x 1 stays in a large work area
+ok 140 - layout columns x 1 stays in a large work area
+  ---
+  duration_ms: 0.136264
+  type: 'test'
+  ...
+# Subtest: layout columns x 2 stays in a large work area
+ok 141 - layout columns x 2 stays in a large work area
+  ---
+  duration_ms: 0.224968
+  type: 'test'
+  ...
+# Subtest: layout columns x 3 stays in a large work area
+ok 142 - layout columns x 3 stays in a large work area
+  ---
+  duration_ms: 0.260509
+  type: 'test'
+  ...
+# Subtest: layout columns x 4 stays in a large work area
+ok 143 - layout columns x 4 stays in a large work area
+  ---
+  duration_ms: 0.236394
+  type: 'test'
+  ...
+# Subtest: layout rows x 1 stays in a large work area
+ok 144 - layout rows x 1 stays in a large work area
+  ---
+  duration_ms: 0.156317
+  type: 'test'
+  ...
+# Subtest: layout rows x 2 stays in a large work area
+ok 145 - layout rows x 2 stays in a large work area
+  ---
+  duration_ms: 0.117642
+  type: 'test'
+  ...
+# Subtest: layout rows x 3 stays in a large work area
+ok 146 - layout rows x 3 stays in a large work area
+  ---
+  duration_ms: 0.096978
+  type: 'test'
+  ...
+# Subtest: layout rows x 4 stays in a large work area
+ok 147 - layout rows x 4 stays in a large work area
+  ---
+  duration_ms: 0.095587
+  type: 'test'
+  ...
+# Subtest: layout grid x 1 stays in a large work area
+ok 148 - layout grid x 1 stays in a large work area
+  ---
+  duration_ms: 0.086791
+  type: 'test'
+  ...
+# Subtest: layout grid x 2 stays in a large work area
+ok 149 - layout grid x 2 stays in a large work area
+  ---
+  duration_ms: 0.117789
+  type: 'test'
+  ...
+# Subtest: layout grid x 3 stays in a large work area
+ok 150 - layout grid x 3 stays in a large work area
+  ---
+  duration_ms: 1.508579
+  type: 'test'
+  ...
+# Subtest: layout grid x 4 stays in a large work area
+ok 151 - layout grid x 4 stays in a large work area
+  ---
+  duration_ms: 0.10514
+  type: 'test'
+  ...
+# Subtest: layout focus x 1 stays in a large work area
+ok 152 - layout focus x 1 stays in a large work area
+  ---
+  duration_ms: 0.091348
+  type: 'test'
+  ...
+# Subtest: layout focus x 2 stays in a large work area
+ok 153 - layout focus x 2 stays in a large work area
+  ---
+  duration_ms: 0.094103
+  type: 'test'
+  ...
+# Subtest: layout focus x 3 stays in a large work area
+ok 154 - layout focus x 3 stays in a large work area
+  ---
+  duration_ms: 0.089808
+  type: 'test'
+  ...
+# Subtest: layout focus x 4 stays in a large work area
+ok 155 - layout focus x 4 stays in a large work area
+  ---
+  duration_ms: 0.125373
+  type: 'test'
+  ...
+# Subtest: minimum-size failure is explicit instead of creating offscreen or unusable windows
+ok 156 - minimum-size failure is explicit instead of creating offscreen or unusable windows
+  ---
+  duration_ms: 0.247574
+  type: 'test'
+  ...
+# Subtest: collection works on the smaller display without tiling
+ok 157 - collection works on the smaller display without tiling
+  ---
+  duration_ms: 0.127777
+  type: 'test'
+  ...
+# Subtest: invalid display bounds rejected
+ok 158 - invalid display bounds rejected
+  ---
+  duration_ms: 0.275469
+  type: 'test'
+  ...
+# Subtest: sign-in heuristic leaves https://accounts.google.com/ alone
+ok 159 - sign-in heuristic leaves https://accounts.google.com/ alone
+  ---
+  duration_ms: 0.906293
+  type: 'test'
+  ...
+# Subtest: sign-in heuristic leaves https://app.example.com/oauth/authorize alone
+ok 160 - sign-in heuristic leaves https://app.example.com/oauth/authorize alone
+  ---
+  duration_ms: 0.107384
+  type: 'test'
+  ...
+# Subtest: sign-in heuristic leaves https://app.example.com/auth/callback alone
+ok 161 - sign-in heuristic leaves https://app.example.com/auth/callback alone
+  ---
+  duration_ms: 1.641873
+  type: 'test'
+  ...
+# Subtest: sign-in heuristic leaves https://sso.example.com/ alone
+ok 162 - sign-in heuristic leaves https://sso.example.com/ alone
+  ---
+  duration_ms: 0.137652
+  type: 'test'
+  ...
+# Subtest: sign-in heuristic leaves https://example.com/login alone
+ok 163 - sign-in heuristic leaves https://example.com/login alone
+  ---
+  duration_ms: 0.202211
+  type: 'test'
+  ...
+# Subtest: new-tab membership allows safe move for https://dashboard.example.com/details
+ok 164 - new-tab membership allows safe move for https://dashboard.example.com/details
+  ---
+  duration_ms: 0.20212
+  type: 'test'
+  ...
+# Subtest: new-tab membership allows safe move for http://localhost:3000/item
+ok 165 - new-tab membership allows safe move for http://localhost:3000/item
+  ---
+  duration_ms: 0.465119
+  type: 'test'
+  ...
+# Subtest: new-tab membership allows safe move for chrome://newtab/
+ok 166 - new-tab membership allows safe move for chrome://newtab/
+  ---
+  duration_ms: 0.178664
+  type: 'test'
+  ...
+# Subtest: new-tab membership leaves unknown/restricted context about:blank
+ok 167 - new-tab membership leaves unknown/restricted context about:blank
+  ---
+  duration_ms: 0.170968
+  type: 'test'
+  ...
+# Subtest: new-tab membership leaves unknown/restricted context chrome://extensions/
+ok 168 - new-tab membership leaves unknown/restricted context chrome://extensions/
+  ---
+  duration_ms: 0.10513
+  type: 'test'
+  ...
+# Subtest: new-tab membership leaves unknown/restricted context https://chromewebstore.google.com/
+ok 169 - new-tab membership leaves unknown/restricted context https://chromewebstore.google.com/
+  ---
+  duration_ms: 0.086581
+  type: 'test'
+  ...
+# Subtest: new-tab membership leaves unknown/restricted context mailto:me@example.com
+ok 170 - new-tab membership leaves unknown/restricted context mailto:me@example.com
+  ---
+  duration_ms: 0.080572
+  type: 'test'
+  ...
+# Subtest: new destinations validate independently of schema v1 backward compatibility
+ok 171 - new destinations validate independently of schema v1 backward compatibility
+  ---
+  duration_ms: 0.402698
+  type: 'test'
+  ...
+# Subtest: per-tab destination and focus override defaults independently
+ok 172 - per-tab destination and focus override defaults independently
+  ---
+  duration_ms: 0.436382
+  type: 'test'
+  ...
+# Subtest: routing: new-window mode never navigates or recreates the source
+ok 173 - routing: new-window mode never navigates or recreates the source
+  ---
+  duration_ms: 7.527136
+  type: 'test'
+  ...
+# Subtest: routing: four concurrent sources share exactly one browsing-window creation
+ok 174 - routing: four concurrent sources share exactly one browsing-window creation
+  ---
+  duration_ms: 5.960024
+  type: 'test'
+  ...
+# Subtest: routing: selecting a destination window never overwrites a tab already there
+ok 175 - routing: selecting a destination window never overwrites a tab already there
+  ---
+  duration_ms: 5.435857
+  type: 'test'
+  ...
+# Subtest: routing: closed destination is replaced only on the next deliberate link
+ok 176 - routing: closed destination is replaced only on the next deliberate link
+  ---
+  duration_ms: 6.483038
+  type: 'test'
+  ...
+# Subtest: routing: uncertain browser-window creation is not retried automatically or on a second gesture
+ok 177 - routing: uncertain browser-window creation is not retried automatically or on a second gesture
+  ---
+  duration_ms: 4.402457
+  type: 'test'
+  ...
+# Subtest: routing: explicit operation acknowledgement permits a later retry
+ok 178 - routing: explicit operation acknowledgement permits a later retry
+  ---
+  duration_ms: 1.932693
+  type: 'test'
+  ...
+# Subtest: routing: private destination windows are rejected
+ok 179 - routing: private destination windows are rejected
+  ---
+  duration_ms: 0.963929
+  type: 'test'
+  ...
+# Subtest: solo: moves live tab, reserves only its new window, and preserves page state
+ok 180 - solo: moves live tab, reserves only its new window, and preserves page state
+  ---
+  duration_ms: 5.367021
+  type: 'test'
+  ...
+# Subtest: workspace: four selected pages tile into four real windows without URL reloads
+ok 181 - workspace: four selected pages tile into four real windows without URL reloads
+  ---
+  duration_ms: 5.101213
+  type: 'test'
+  ...
+# Subtest: workspace: reopening reuses known live bindings rather than matching URLs or creating duplicates
+ok 182 - workspace: reopening reuses known live bindings rather than matching URLs or creating duplicates
+  ---
+  duration_ms: 5.826487
+  type: 'test'
+  ...
+# Subtest: workspace: collection moves chosen anchors together but never moves an unrelated page
+ok 183 - workspace: collection moves chosen anchors together but never moves an unrelated page
+  ---
+  duration_ms: 5.47717
+  type: 'test'
+  ...
+# Subtest: workspace: tiny work area rejected before any page or window moves
+ok 184 - workspace: tiny work area rejected before any page or window moves
+  ---
+  duration_ms: 2.076778
+  type: 'test'
+  ...
+# Subtest: workspace: arrange-only never reopens closed anchors
+ok 185 - workspace: arrange-only never reopens closed anchors
+  ---
+  duration_ms: 4.161893
+  type: 'test'
+  ...
+# Subtest: workspace: explicit Open recreates a closed anchor from its saved URL
+ok 186 - workspace: explicit Open recreates a closed anchor from its saved URL
+  ---
+  duration_ms: 4.378066
+  type: 'test'
+  ...
+# Subtest: workspace: release restores prior protection choices without closing or reloading
+ok 187 - workspace: release restores prior protection choices without closing or reloading
+  ---
+  duration_ms: 3.555219
+  type: 'test'
+  ...
+# Subtest: workspace: delete removes definition and releases membership, not browser objects
+ok 188 - workspace: delete removes definition and releases membership, not browser objects
+  ---
+  duration_ms: 2.70355
+  type: 'test'
+  ...
+# Subtest: workspace: candidate native new tab moves intact to the chosen browsing destination
+ok 189 - workspace: candidate native new tab moves intact to the chosen browsing destination
+  ---
+  duration_ms: 7.371561
+  type: 'test'
+  ...
+# Subtest: workspace: blank native tab waits for a knowable URL rather than replaying it
+ok 190 - workspace: blank native tab waits for a knowable URL rather than replaying it
+  ---
+  duration_ms: 3.213804
+  type: 'test'
+  ...
+# Subtest: workspace: likely auth tabs remain in place with an explanation
+ok 191 - workspace: likely auth tabs remain in place with an explanation
+  ---
+  duration_ms: 3.815971
+  type: 'test'
+  ...
+# Subtest: workspace: pause suspends both link protection and extra-tab relocation
+ok 192 - workspace: pause suspends both link protection and extra-tab relocation
+  ---
+  duration_ms: 4.130591
+  type: 'test'
+  ...
+# Subtest: workspace: no creation listener resurrects a closed anchor
+ok 193 - workspace: no creation listener resurrects a closed anchor
+  ---
+  duration_ms: 3.69274
+  type: 'test'
+  ...
+# Subtest: workspace: user dragging an anchor out releases it rather than snapping it back
+ok 194 - workspace: user dragging an anchor out releases it rather than snapping it back
+  ---
+  duration_ms: 2.590068
+  type: 'test'
+  ...
+# Subtest: workspace: extension-owned move token prevents false release
+ok 195 - workspace: extension-owned move token prevents false release
+  ---
+  duration_ms: 3.050148
+  type: 'test'
+  ...
+# Subtest: workspace: reserved window cannot also become a browsing target
+ok 196 - workspace: reserved window cannot also become a browsing target
+  ---
+  duration_ms: 2.545804
+  type: 'test'
+  ...
+# Subtest: workspace: public page content cannot create or delete workspaces
+ok 197 - workspace: public page content cannot create or delete workspaces
+  ---
+  duration_ms: 1.758962
+  type: 'test'
+  ...
+# Subtest: workspace: import validates fully before releasing live workspace
+ok 198 - workspace: import validates fully before releasing live workspace
+  ---
+  duration_ms: 1.852421
+  type: 'test'
+  ...
+# Subtest: workspace: valid import releases old bindings but never auto-opens imported URLs
+ok 199 - workspace: valid import releases old bindings but never auto-opens imported URLs
+  ---
+  duration_ms: 4.251363
+  type: 'test'
+  ...
+# Subtest: workspace: optional display denial falls back to user-provided work area
+ok 200 - workspace: optional display denial falls back to user-provided work area
+  ---
+  duration_ms: 2.862844
+  type: 'test'
+  ...
+# Subtest: workspace: vanished saved display falls back to primary with visible warning
+ok 201 - workspace: vanished saved display falls back to primary with visible warning
+  ---
+  duration_ms: 2.06191
+  type: 'test'
+  ...
+# Subtest: workspace: runtime bindings rehydrate from session storage on module restart
+ok 202 - workspace: runtime bindings rehydrate from session storage on module restart
+  ---
+  duration_ms: 15.882868
+  type: 'test'
+  ...
+# Subtest: source: return to anchor uses session provenance, not URL guessing
+ok 203 - source: return to anchor uses session provenance, not URL guessing
+  ---
+  duration_ms: 1.621066
+  type: 'test'
+  ...
+# Subtest: source: closed original is reported and not recreated
+ok 204 - source: closed original is reported and not recreated
+  ---
+  duration_ms: 1.250534
+  type: 'test'
+  ...
+# Subtest: health: badge ready requires a versioned document-targeted guard acknowledgement
+ok 205 - health: badge ready requires a versioned document-targeted guard acknowledgement
+  ---
+  duration_ms: 1.80317
+  type: 'test'
+  ...
+# Subtest: health: missing acknowledgement cannot show a green-ready ON badge
+ok 206 - health: missing acknowledgement cannot show a green-ready ON badge
+  ---
+  duration_ms: 0.677958
+  type: 'test'
+  ...
+# Subtest: health: stale acknowledgement cannot show a green-ready ON badge
+ok 207 - health: stale acknowledgement cannot show a green-ready ON badge
+  ---
+  duration_ms: 0.726161
+  type: 'test'
+  ...
+# Subtest: health: old acknowledgement cannot show a green-ready ON badge
+ok 208 - health: old acknowledgement cannot show a green-ready ON badge
+  ---
+  duration_ms: 0.624809
+  type: 'test'
+  ...
+# Subtest: health: snapshot revisions increase on pin state changes
+ok 209 - health: snapshot revisions increase on pin state changes
+  ---
+  duration_ms: 0.621904
+  type: 'test'
+  ...
+# Subtest: health: stale HELLO from replaced document is rejected
+ok 210 - health: stale HELLO from replaced document is rejected
+  ---
+  duration_ms: 0.595611
+  type: 'test'
+  ...
+# Subtest: health: acknowledged current HELLO can establish ready state
+ok 211 - health: acknowledged current HELLO can establish ready state
+  ---
+  duration_ms: 0.761718
+  type: 'test'
+  ...
+# Subtest: workspace: one live tab cannot be bound to two saved anchors
+ok 212 - workspace: one live tab cannot be bound to two saved anchors
+  ---
+  duration_ms: 0.734277
+  type: 'test'
+  ...
+# Subtest: workspace: release queues behind an in-progress open instead of leaking reservations
+ok 213 - workspace: release queues behind an in-progress open instead of leaking reservations
+  ---
+  duration_ms: 3.26032
+  type: 'test'
+  ...
+# Subtest: workspace: extension move lease is consumed so a following manual drag releases immediately
+ok 214 - workspace: extension move lease is consumed so a following manual drag releases immediately
+  ---
+  duration_ms: 2.035728
+  type: 'test'
+  ...
+# Subtest: workspace: native tabs respect separate-new-window routing without replay
+ok 215 - workspace: native tabs respect separate-new-window routing without replay
+  ---
+  duration_ms: 4.319841
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity __proto__ is rejected before persistence
+ok 216 - workspace: reserved identity __proto__ is rejected before persistence
+  ---
+  duration_ms: 1.512573
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity constructor is rejected before persistence
+ok 217 - workspace: reserved identity constructor is rejected before persistence
+  ---
+  duration_ms: 0.782293
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity prototype is rejected before persistence
+ok 218 - workspace: reserved identity prototype is rejected before persistence
+  ---
+  duration_ms: 0.562292
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity default is rejected before persistence
+ok 219 - workspace: reserved identity default is rejected before persistence
+  ---
+  duration_ms: 1.63475
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity toString is rejected before persistence
+ok 220 - workspace: reserved identity toString is rejected before persistence
+  ---
+  duration_ms: 1.082713
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity valueOf is rejected before persistence
+ok 221 - workspace: reserved identity valueOf is rejected before persistence
+  ---
+  duration_ms: 0.986446
+  type: 'test'
+  ...
+# Subtest: workspace: reserved identity hasOwnProperty is rejected before persistence
+ok 222 - workspace: reserved identity hasOwnProperty is rejected before persistence
+  ---
+  duration_ms: 0.948014
+  type: 'test'
+  ...
+1..222
+# tests 222
+# suites 0
+# pass 222
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 458.736861

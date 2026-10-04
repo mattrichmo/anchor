@@ -1,0 +1,13 @@
+import {cp, rm, mkdir, readdir, readFile, writeFile} from 'node:fs/promises';
+import {resolve, dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const dist=resolve(root,'extension');
+await rm(dist,{recursive:true,force:true});await mkdir(dist,{recursive:true});
+await cp(resolve(root,'public'),dist,{recursive:true});
+await cp(resolve(root,'src'),dist,{recursive:true});
+const pkg=JSON.parse(await readFile(resolve(root,'package.json'),'utf8'));
+const path=resolve(dist,'manifest.json');
+const manifest=JSON.parse(await readFile(path,'utf8'));manifest.version=pkg.version;
+await writeFile(path,JSON.stringify(manifest,null,2)+'\n');
+console.log(`Built Anchor ${pkg.version} → extension/ (no runtime dependencies)`);

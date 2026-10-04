@@ -1,0 +1,22 @@
+{
+  "name": "anchor-tab-guard",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Protected pages, separate browsing destinations, and dashboard workspaces.",
+  "author": "Matt Richmond",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/unit/*.test.mjs",
+    "validate": "node scripts/validate.mjs",
+    "check": "npm test && npm run build && npm run validate",
+    "demo": "node tests/fixtures/server.mjs",
+    "test:e2e": "python tests/e2e/run.py",
+    "package": "npm run check && python scripts/package.py",
+    "test:ui": "python tests/ui/run.py && python tests/ui/workspaces.py"
+  }
+}

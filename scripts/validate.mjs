@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFile,stat,readdir} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..','extension');
+const manifest=JSON.parse(await readFile(resolve(root,'manifest.json'),'utf8'));
+assert.equal(manifest.manifest_version,3);assert(manifest.description.length<=132);
+assert(manifest.name.length<=75);assert.equal(manifest.incognito,'not_allowed');
+assert.deepEqual(manifest.optional_permissions,['system.display']);
+assert.equal(manifest.version,JSON.parse(await readFile(resolve(root,'../package.json'),'utf8')).version);
+assert.deepEqual(manifest.permissions,['storage','scripting','contextMenus','alarms','webNavigation']);
+const files=[manifest.background.service_worker,manifest.action.default_popup,manifest.options_ui.page,...Object.values(manifest.icons),...manifest.content_scripts.flatMap(s=>s.js)];
+for(const file of files)assert((await stat(resolve(root,file))).isFile(),`Missing manifest asset: ${file}`);
+let jsCount=0,htmlCount=0;
+async function walk(folder){for(const e of await readdir(folder,{withFileTypes:true})){const path=resolve(folder,e.name);if(e.isDirectory()){await walk(path);continue;}if(e.name.endsWith('.js')){jsCount++;const r=spawnSync(process.execPath,['--check',path],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);const code=await readFile(path,'utf8');for(const m of code.matchAll(/(?:from\s+|import\s*)['"](\.[^'"]+)['"]/g)){assert((await stat(resolve(dirname(path),m[1]))).isFile(),`Missing module import: ${m[1]}`);}assert(!/\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b/.test(code),`Unexpected network API in ${path}`);assert(!/\beval\s*\(|new Function\s*\(/.test(code),`Dynamic code in ${path}`);}if(e.name.endsWith('.html')){htmlCount++;const html=await readFile(path,'utf8');assert(/<html lang="en">/.test(html));for(const m of html.matchAll(/(?:src|href)="([^"#]+)"/g)){const target=m[1];if(/^(?:https?:|mailto:|#)/.test(target))continue;assert((await stat(resolve(dirname(path),target.split('#')[0]))).isFile(),`Broken local asset: ${target}`);}assert(!/<script[^>]*src="https?:/.test(html));assert(!/\son(?:click|load|error)\s*=/.test(html));}}}
+await walk(root);
+console.log(`Validated Manifest V3; ${jsCount} scripts; ${htmlCount} HTML pages; all local assets present.`);

@@ -1,0 +1,162 @@
+{
+  "version": "2.0.0",
+  "date": "2026-10-03",
+  "browser": "Chromium 144.0.7559.96",
+  "method": "Actual shipped DOM/UI scripts, rendered in about:blank with explicitly mocked Chrome extension APIs. NOT installed-extension E2E. No policy changes or blocked URL navigation.",
+  "tests": [
+    {
+      "name": "Rendered popup fits a 392x600 viewport with accessible scrolling",
+      "status": "PASS"
+    },
+    {
+      "name": "Popup mode, opening preference, pause and resume wire to runtime requests",
+      "status": "PASS"
+    },
+    {
+      "name": "Popup protection override/reset and settings button are functional",
+      "status": "PASS"
+    },
+    {
+      "name": "Home URL control captures and displays current fixture URL",
+      "status": "PASS"
+    },
+    {
+      "name": "Settings controls and normalized-origin add/remove are functional",
+      "status": "PASS"
+    },
+    {
+      "name": "Saving an existing rule replaces it rather than duplicating it",
+      "status": "PASS"
+    },
+    {
+      "name": "Settings JSON import uses validation and updates preferences",
+      "status": "PASS"
+    },
+    {
+      "name": "Invalid import shows actionable error",
+      "status": "PASS"
+    },
+    {
+      "name": "Reset confirmation restores defaults",
+      "status": "PASS"
+    },
+    {
+      "name": "Responsive settings renders without horizontal overflow at 390px",
+      "status": "PASS"
+    },
+    {
+      "name": "Onboarding, help and privacy screens render with support contact",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM guard intercepts trusted nested link before page handlers",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM guard captures Enter-generated trusted link activation",
+      "status": "PASS"
+    },
+    {
+      "name": "Known-unprotected DOM link stays trusted, unmodified and native",
+      "status": "PASS"
+    },
+    {
+      "name": "Ctrl DOM gesture is not intercepted",
+      "status": "PASS"
+    },
+    {
+      "name": "Shift DOM gesture is not intercepted",
+      "status": "PASS"
+    },
+    {
+      "name": "Alt DOM gesture is not intercepted",
+      "status": "PASS"
+    },
+    {
+      "name": "Meta DOM gesture is not intercepted",
+      "status": "PASS"
+    },
+    {
+      "name": "Middle DOM gesture is not intercepted",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM native exclusion: blank",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM native exclusion: download",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM native exclusion: mail",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM native exclusion: js",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM same-origin policy distinguishes internal and external links",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM composedPath finds open-shadow links",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM delegation protects links inserted after initialization",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM GET-form serialization preserves submitter and replaces action query",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM POST submission is not intercepted or replayed",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM password-containing GET form is left native",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM reinjection is idempotent; one gesture makes one request",
+      "status": "PASS"
+    },
+    {
+      "name": "Untrusted synthetic page clicks cannot trigger the guard",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM snapshot broadcast activates a newly pinned tab without reinjection",
+      "status": "PASS"
+    },
+    {
+      "name": "Disconnected runtime keeps protected click cancelled, rather than replaying it",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM guard rejects out-of-order protection snapshot",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM guard rejects a snapshot for another document",
+      "status": "PASS"
+    },
+    {
+      "name": "Popup routes destination preferences through tab-scoped messages",
+      "status": "PASS"
+    },
+    {
+      "name": "Per-tab focus preference does not mutate the global default",
+      "status": "PASS"
+    },
+    {
+      "name": "Default destination is editable in Settings",
+      "status": "PASS"
+    }
+  ],
+  "passed": 38,
+  "failed": 0
+}

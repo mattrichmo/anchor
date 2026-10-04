@@ -1,0 +1,161 @@
+{
+  "version": "2.0.0",
+  "date": "2026-10-03",
+  "capture_method": "Screenshots render shipped UI with explicit Chrome-API fixture state; they are not evidence of installed-extension tests. Dashboard and navigation drawings use fictional demonstration data. Promotions are original compositions. No font binaries or third-party stock images included.",
+  "assets": [
+    {
+      "file": "store/screenshots/01-protection-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/screenshots/02-settings-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/screenshots/03-advanced-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/screenshots/04-welcome-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/screenshots/05-workspaces-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/screenshots/06-layout-1280x800.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/screenshots/source-dashboard.png",
+      "width": 1280,
+      "height": 800,
+      "format": "PNG",
+      "purpose": "raw supporting capture"
+    },
+    {
+      "file": "store/screenshots/source-popup.png",
+      "width": 392,
+      "height": 657,
+      "format": "PNG",
+      "purpose": "raw supporting capture"
+    },
+    {
+      "file": "store/screenshots/source-settings-mobile.png",
+      "width": 390,
+      "height": 844,
+      "format": "PNG",
+      "purpose": "raw supporting capture"
+    },
+    {
+      "file": "store/screenshots/source-workspaces-full.png",
+      "width": 1440,
+      "height": 2132,
+      "format": "PNG",
+      "purpose": "raw supporting capture"
+    },
+    {
+      "file": "store/screenshots/source-workspaces-mobile.png",
+      "width": 390,
+      "height": 844,
+      "format": "PNG",
+      "purpose": "raw supporting capture"
+    },
+    {
+      "file": "store/promotional/anchor-1400x560.png",
+      "width": 1400,
+      "height": 560,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "store/promotional/anchor-440x280.png",
+      "width": 440,
+      "height": 280,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "brand/anchor-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "brand/anchor-256.png",
+      "width": 256,
+      "height": 256,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "brand/anchor-512.png",
+      "width": 512,
+      "height": 512,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "brand/anchor-wordmark-dark.png",
+      "width": 1160,
+      "height": 300,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "brand/anchor-wordmark-light.png",
+      "width": 1160,
+      "height": 300,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "public/icons/128.png",
+      "width": 128,
+      "height": 128,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "public/icons/16.png",
+      "width": 16,
+      "height": 16,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "public/icons/32.png",
+      "width": 32,
+      "height": 32,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    },
+    {
+      "file": "public/icons/48.png",
+      "width": 48,
+      "height": 48,
+      "format": "PNG",
+      "purpose": "brand or store asset"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "product": "Anchor",
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "local-demo",
+      "name": "Local fixture workspace",
+      "layout": "grid",
+      "destination": "browsing-window",
+      "foreground": false,
+      "reserved": true,
+      "gap": 12,
+      "displayId": "auto",
+      "anchors": [
+        {
+          "id": "fixture-1",
+          "label": "Deployment fixture",
+          "url": "http://127.0.0.1:8765/?anchor=1",
+          "mode": "strict"
+        },
+        {
+          "id": "fixture-2",
+          "label": "Alerts fixture",
+          "url": "http://127.0.0.1:8765/?anchor=2",
+          "mode": "strict"
+        },
+        {
+          "id": "fixture-3",
+          "label": "Triage fixture",
+          "url": "http://127.0.0.1:8765/?anchor=3",
+          "mode": "strict"
+        },
+        {
+          "id": "fixture-4",
+          "label": "Preview fixture",
+          "url": "http://127.0.0.1:8765/?anchor=4",
+          "mode": "strict"
+        }
+      ]
+    }
+  ]
+}

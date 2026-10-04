@@ -1,0 +1,78 @@
+{
+  "version": "2.0.0",
+  "date": "2026-10-03",
+  "browser": "Chromium 144.0.7559.96",
+  "method": "Real workspace UI and validation scripts, explicit mocked Chrome API fixtures on about:blank. No installed-extension behavior or OS window movement is proven.",
+  "tests": [
+    {
+      "name": "Workspace empty state renders with clear limits and no auto-open",
+      "status": "PASS"
+    },
+    {
+      "name": "Four existing pages can be selected for move-without-reload adoption",
+      "status": "PASS"
+    },
+    {
+      "name": "Edits made after saving remain bound to the live draft and persist on a second save",
+      "status": "PASS"
+    },
+    {
+      "name": "Page reorder/removal updates layout order and available page choices",
+      "status": "PASS"
+    },
+    {
+      "name": "Changing a selected home URL drops the stale live-tab adoption binding",
+      "status": "PASS"
+    },
+    {
+      "name": "All five layout controls update the explicitly labelled arrangement preview",
+      "status": "PASS"
+    },
+    {
+      "name": "Destination selection survives editing and routing/focus are independent preferences",
+      "status": "PASS"
+    },
+    {
+      "name": "Open and arrange-only requests carry stable identities and distinct reopen intent",
+      "status": "PASS"
+    },
+    {
+      "name": "Pause/resume and explicit release preserve the saved definition",
+      "status": "PASS"
+    },
+    {
+      "name": "Invalid workspace imports show a validation error without adding definitions",
+      "status": "PASS"
+    },
+    {
+      "name": "Prototype-like workspace identities are rejected by the actual import schema",
+      "status": "PASS"
+    },
+    {
+      "name": "Optional display access is requested from the user gesture and populates monitor choices",
+      "status": "PASS"
+    },
+    {
+      "name": "Interrupted operations require explicit acknowledgement before retry",
+      "status": "PASS"
+    },
+    {
+      "name": "Untrusted page labels render as text, not executable markup",
+      "status": "PASS"
+    },
+    {
+      "name": "Saving unrelated page edits does not clear a browsing window created since the editor opened",
+      "status": "PASS"
+    },
+    {
+      "name": "Workspace UI renders at 390/768/1280px without horizontal overflow; capture labelled demo screens",
+      "status": "PASS"
+    },
+    {
+      "name": "No uncaught JavaScript errors occurred in the rendered workspace UI",
+      "status": "PASS"
+    }
+  ],
+  "passed": 17,
+  "failed": 0
+}

@@ -1,0 +1,11 @@
+{
+  "build": "2.0.0",
+  "date": "2026-10-03",
+  "status": "NOT_RUN",
+  "phase": "extension startup",
+  "tests": [],
+  "passed": 0,
+  "failed": 0,
+  "reason": "No extension service worker appeared. Inspect chrome://extensions for loading errors and chrome://policy for installation restrictions. Use a browser/profile where unpacked extension installation is permitted; do not alter managed restrictions.",
+  "error": "Timeout 30000ms exceeded while waiting for event \"serviceworker\""
+}
