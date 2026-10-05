@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Anchor \u2014 Protected Workspaces",
+  "name": "Anchor \u2014 Pinned Tabs & Workspaces",
   "short_name": "Anchor",
-  "description": "Keep dashboards in place. Route links to tabs or separate windows and arrange saved workspaces. Local only, no tracking.",
+  "description": "Protect pinned tabs from link navigation. Open links elsewhere and arrange dashboard workspaces. Local only, no tracking.",
   "version": "2.0.0",
   "minimum_chrome_version": "123",
   "author": "Matt Richmond",

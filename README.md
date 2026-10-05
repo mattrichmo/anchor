@@ -1,8 +1,16 @@
-# Anchor
+# Anchor — pinned tab protection and workspaces
 
 **Keep your place. Explore somewhere else.**
 
-Anchor is a Chrome extension for keeping a dashboard, project page, or other working tab open while you follow links. Eligible links open in a new tab, a separate window, or a browsing window you choose. You can also save up to four pages as a workspace and arrange their Chrome windows together.
+Anchor is a Chrome extension that protects **pinned tabs from link navigation**. When you follow an eligible link, Anchor opens the destination elsewhere so your pinned page keeps its place.
+
+Start with a pinned tab, then choose how much of your browser to organize:
+
+- **Protect a page:** automatically protect pinned tabs, or manually protect any working tab.
+- **Separate exploration:** open links in a new tab, a new window, or a designated browsing window; choose whether to follow them or stay on the original page.
+- **Build a workspace:** save up to four protected pages, arrange their Chrome windows, and send new browsing outside the dashboard windows.
+
+Chrome’s own Pin command keeps a tab handy but still lets it navigate. Anchor adds protection for eligible links. Address-bar changes and some other navigation paths remain outside that protection; see [URL protection](#what-to-expect-from-url-protection).
 
 No account or subscription. Settings stay on your device. No analytics or Anchor backend.
 

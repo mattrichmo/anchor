@@ -4,6 +4,10 @@
 
 Separate browsing/window routing, local saved workspaces, real-window layouts, native-tab relocation with exceptions, pause/release, return-to-source, optional display discovery and protection-readiness hardening.
 
+## Core product gap: navigation coverage
+
+The product starts with keeping pinned pages in place. Current link protection covers eligible link clicks, with optional selected recovery. Direct address-bar changes, browser history actions, redirects, and some script routes remain outside prevention. Prioritize a measured navigation-coverage investigation and installed-Chrome acceptance before broadening the guarantee. Reloading an old URL is not equivalent to keeping the original document and its unsaved state intact. See [product audit](PRODUCT-AUDIT.md) for the source-backed coverage and recommended positioning.
+
 ## Acceptance before public release
 
 Run installed-browser tests and headed macOS acceptance; exercise real dashboard auth, form/download flows, window sizes/focus, permission revocation, browser restart, upgrade and concurrent actions. Improve any failures before expanding the advertised guarantee. The 2.0 handoff is not evidence that this gate passed.

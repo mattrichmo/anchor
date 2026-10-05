@@ -1,14 +1,17 @@
-# Anchor — Protected Workspaces
+# Anchor — Pinned Tabs & Workspaces
 
 ## Short description
 
-Keep dashboards in place. Route links to tabs or separate windows and arrange saved workspaces. Local only, no tracking.
+Protect pinned tabs from link navigation. Open links elsewhere and arrange dashboard workspaces. Local only, no tracking.
 
 ## Full listing copy
 
 Keep your place. Explore somewhere else.
 
-Anchor gives important working pages a home: protect eligible links on pinned or manually protected tabs, choose where exploration opens, and arrange a small dashboard workspace without turning your browser into a giant tab manager.
+Anchor adds link protection to pinned tabs. Follow an eligible link and its destination opens elsewhere, leaving the original working page in place. You can also manually protect an unpinned page, choose a separate browsing destination, and save protected pages as a dashboard workspace.
+
+PROTECT PINNED TABS
+Chrome’s Pin command keeps a tab handy but still allows it to navigate. Anchor automatically protects eligible link clicks on pinned webpages. Choose all eligible links, allow same-origin navigation, or keep only a saved home URL in place. Pause protection when you need to sign in or navigate within the original tab.
 
 CHOOSE WHERE LINKS GO
 Open eligible links in a new tab in the current window, a separate window for each link, or new tabs in a designated browsing window. Existing browsing tabs are never overwritten. Follow the link or stay on your dashboard—the focus choice is yours.
@@ -28,7 +31,7 @@ No account, ads, analytics, backend or remote runtime scripts. Preferences, home
 BUILT WITH BOUNDARIES
 Anchor protects supported link navigation, not every possible browser action. JavaScript-only controls, redirects, address-bar/back/forward changes, application side effects and unsaved state restoration are not universally covered. POSTs, downloads, password/file forms and native browser gestures retain their native handling. Reserved windows can move supported newly created extra tabs intact, but a tab may briefly appear and likely sign-in/browser-owned/ambiguous cases are left alone. This is not kiosk mode.
 
-Check the page is connected before relying on protection; refresh existing pages after extension upgrades. The optional typed/bookmark recovery is experimental and off by default. Detailed behavior and privacy notes are available in the included help pages.
+Check the page is connected before relying on protection; refresh existing pages after extension upgrades. The optional address-bar/bookmark/link/start-page recovery is experimental and off by default. Detailed behavior and privacy notes are available in the included help pages.
 
 ## Publisher entry guidance
 
