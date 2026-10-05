@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "date": "2026-10-05",
-  "browser": "Chromium 151.0.7922.173",
+  "browser": "Chromium 143.0.7499.4",
   "method": "Actual shipped DOM/UI scripts with mocked Chrome APIs. General UI fixtures use about:blank; iframe and form navigation cases use synthetic HTTP origins served entirely through local Playwright routes. NOT installed-extension E2E. No policy changes or external requests.",
   "tests": [
     {

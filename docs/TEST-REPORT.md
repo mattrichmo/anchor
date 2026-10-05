@@ -1,5 +1,21 @@
 # Anchor 2.0.0 — build and acceptance report
 
+## 5 October 2026 — installed-extension acceptance on macOS
+
+The checkout was pulled from `main` and tested at **`129a0b40ab2f2c0583f08bad5a1c365eb1c185ee`**. The built unpacked extension was Anchor **2.0.0**, runtime tree SHA-256 **`137346309e1d8529ab856513c986c34a68a724a498328131ca8c31db7768c0fe`**. Environment: **macOS 15.2 arm64**, Node **v26.8.2**, Python **3.14.3**, Playwright **1.57.0**, Chrome for Testing **143.0.7499.4**. No managed browser policy was changed.
+
+| Check | Result |
+|---|---|
+| `npm run check` | Passed: 247 unit cases, build, and validation. |
+| `npm run test:ui` | Passed: 54 rendered UI/DOM cases, 20 rendered workspace cases, and 4 CSP/export checks; 78 total. These UI fixtures use mocked Chrome APIs. |
+| Headed installed-extension E2E | 55 passed, 1 failed, 2 skipped. The failure was the test harness requiring a distinct CDP target ID after worker termination. |
+| Final headless installed-extension E2E | **56 passed, 0 failed, 2 skipped.** A fresh isolated profile loaded the built unpacked extension. The worker test now verifies that the old target disappears, a runtime request returns persisted state, and a worker target is present afterward. |
+| Manual installed-extension address bar | **Failed acceptance.** Actual omnibox navigation did not restore the pinned source URL in a separate branch; it replaced the source document and lost the unsaved field. The browser reported a typed address-bar navigation. |
+
+The two final E2E skips are (1) the same-URL pending recovery race, where the post-create pending interval could not be observed, and (2) optional display-permission revocation, because `system.display` was not granted. The race still needs manual investigation. The address-bar CDP simulation passed, but it is not a substitute for the failing actual omnibox interaction. The popup also remained at “Checking this tab… / Connecting to Chrome” during later manual navigation work; reload/update readiness is not accepted yet.
+
+The extension card showed no Errors section when first loaded from `extension/`; the initial worker console was empty. A later one-off DevTools diagnostic snippet had a syntax error in the diagnostic itself. No extension-source runtime error was observed. Useful fixture-only screenshots are [protected-source.png](acceptance-screenshots/protected-source.png) and [connected-protection-popup.png](acceptance-screenshots/connected-protection-popup.png). Full per-case results, browser metadata, and skip reasons are in [browser-test-results.json](browser-test-results.json); remaining live checks are in [MANUAL-ACCEPTANCE.md](MANUAL-ACCEPTANCE.md).
+
 ## 5 October 2026 — hardening implementation
 
 H1–H9 from the [independent hardening review](HARDENING-REVIEW.md) are implemented. The follow-up also validates session tab/runtime records, reconciles live ownership on worker startup, bounds restored pause deadlines, repairs lost-revision guard handshakes, rejects conflicting reserved workspace claims, and preflights every selected page before adoption. The local extension UI now blocks network connections and native form submissions through CSP while preserving local asset rendering and JSON exports.
@@ -85,7 +101,7 @@ Workspace Open may partially complete if a browser API fails; existing pages rem
 
 ## Required before public publication
 
-Run `npm run test:e2e` in a permitted current Chromium profile and record actual outcomes. Run a headed pass on the user's target Chrome/macOS setup. Complete `MANUAL-ACCEPTANCE.md`, especially real authentication, window focus/bounds/scaling, multiple monitors, permission revocation, update/reconnect, native gestures and rapid pin transitions. Resolve failures before expanding product guarantees. Review/host the privacy site, verify publisher details and personally complete store certifications.
+Resolve and retest the actual omnibox recovery failure before claiming address-bar protection. Manually investigate the skipped same-URL pending race; finish extension reload/update readiness, Back/Forward/reload, permission revocation, failed-move/manual-drag, window focus/bounds/scaling, multiple-monitor, accessibility, and real-dashboard checks in [MANUAL-ACCEPTANCE.md](MANUAL-ACCEPTANCE.md). Rerun affected checks after code changes. Review/host the privacy site, verify publisher details, and personally complete store certifications.
 
 ```sh
 npm run check

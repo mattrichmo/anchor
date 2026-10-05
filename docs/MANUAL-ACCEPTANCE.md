@@ -1,34 +1,38 @@
-# Anchor 2.0 — installed-browser acceptance gate
+# Anchor 2.0 — installed-browser acceptance
 
-Record the UTC date, browser/version, OS, extension build/hash and result for every item. The E2E runner writes its attempted browser, startup phase, version when available, and pass/fail/skip counts to `docs/browser-test-results.json`. A managed-policy block is `NOT RUN`, never a pass. Use a permitted test profile with fixtures before personal dashboards; do not weaken enterprise policy or browser security settings to run a test.
+Recorded **5 October 2026** on macOS 15.2 arm64 with Google Chrome for Testing **143.0.7499.4**. The tested checkout was `129a0b40ab2f2c0583f08bad5a1c365eb1c185ee`; Anchor **2.0.0**, runtime tree SHA-256 `137346309e1d8529ab856513c986c34a68a724a498328131ca8c31db7768c0fe`. The unpacked extension was loaded from `extension/` in a temporary profile. All installed-extension fixture checks used `http://127.0.0.1:8765`; no personal account data was opened.
 
-| Check | Pass condition | Result |
-|---|---|---|
-| Load/upgrade/reconnect | No extension errors; connected badge after webpage refresh | NOT RUN |
-| Pin already-open page | After acknowledged ready, link/Enter opens exactly one destination; original JS marker, input and scroll remain | NOT RUN |
-| Pin immediately then click | Characterize transition; do not assert atomic immunity; check readiness/preflight behavior | NOT RUN |
-| Iframe `_top` and hash | From `/frame?case=other`, a `_top` `#section` link branches against the top URL and preserves its document token/input; when the top URL matches the resolved target, the hash stays in that document | NOT RUN |
-| Iframe `_parent` | A direct-child `_parent` link and opt-in GET form do not replace the top page; a nested `_parent` link remains in its immediate parent frame | NOT RUN |
-| Unpin/disabled/native regression | Original trusted native page interactions remain usable | NOT RUN |
-| Three routing choices | Correct tab/window placement; no existing browsing tab overwritten | NOT RUN |
-| Focus choices | Follow vs stay, including minimized destination, actual macOS window manager | NOT RUN |
-| Solo action | Existing tab moved, no deliberate reload; exploration leaves reserved window | NOT RUN |
-| Grid and other layouts | Only selected anchor pages arranged; usable dimensions/readback; other tabs untouched | NOT RUN |
-| Simultaneous branches | Four anchors route to one shared destination window and four separate tabs | NOT RUN |
-| Native extra tab | Cmd/Ctrl/middle/blank target moves original tab; no duplicate or navigation replay | NOT RUN |
-| Forms/download/auth | POST happens once natively; downloads native; pause enables sign-in; auth exceptions reasonable | NOT RUN |
-| SPA route coverage | Eligible anchor click branches before the SPA handler; standalone `pushState` updates the observed URL while retaining the same document token and unsaved input | NOT RUN |
-| Address-bar navigation | Type a URL in Chrome's actual address bar with recovery enabled. Record whether recovery opens a branch and reloads the saved URL; compare document token and unsaved input before/after. URL recovery does not preserve in-memory page state | NOT RUN |
-| Same-URL pending recovery | The E2E fixture issues a second navigation from the first recovery branch event and checks Chrome's `pendingUrl`. If the post-create interval cannot be observed, record `SKIP`; the separate manual address-bar check remains required | NOT RUN |
-| Unsupported routes | JS-only buttons and standalone history changes match the documented coverage limits; no dangerous rollback | NOT RUN |
-| Pause and arrange | Pause a live workspace, arrange its open pages, then confirm the pause deadline remains active and a normal link stays native until Resume or expiry; verify document token and unsaved input before/after arrange | NOT RUN |
-| Closed/moved pages | Close never resurrects; deliberate drag releases; release/delete never closes/reloads | NOT RUN |
-| Workspace definitions | Save/edit/import/export valid; selected live pages preserved; missing pages only open explicitly | NOT RUN |
-| Worker suspend/restart | Let Chrome suspend the worker naturally, then trigger a protected action; session state survives. The E2E termination case uses DevTools to terminate the real service-worker target and observes its next start, without clearing extension storage | NOT RUN |
-| Browser/extension restart | Missing live bindings handled honestly; no silent claim of memory restoration | NOT RUN |
-| Display removal/scaling | Fallback and geometry warnings; no continuous snapback/off-screen enforcement | NOT RUN |
-| Permission changes | Grant optional display access through the workspace UI's real user gesture, verify display metadata, revoke it in Chrome's extension permissions, and verify metadata access disappears with the current-display fallback. E2E revocation is skipped when the isolated profile has no grant; it does not add a grant programmatically | NOT RUN |
-| Accessibility | Keyboard navigation, zoom, scrollable popup, focus, reduced motion and screen reader labels | NOT RUN |
-| Real dashboards | Test chosen apps without unsaved important work; record exact URLs redacted and observed limits | NOT RUN |
+The final automated installed-extension run used a fresh headless Chromium profile and is recorded in [browser-test-results.json](browser-test-results.json): **56 passed, 0 failed, 2 skipped**. A headed run on the same OS/browser passed 55, failed the worker-target identity assertion, and skipped the same two cases. The worker test was corrected to verify that the original target disappears, then a runtime request succeeds and a worker is visible. That corrected test passed in the final headless run. The UI screenshot test passed in both browser modes.
 
-Use the local fixture server and `examples/workspace-local-demo.json` for repeatable early checks. The fixture records a per-document token and has an unsaved input so checks can distinguish same-document URL changes from reloads. Browser-bar `Page.navigate` coverage in E2E is a controlled CDP typed-navigation simulation; it is not evidence of a toolbar interaction or proof that recovery preserves page memory. Standalone `pushState` is observed, not reversed. Do not mark an item passed merely because a mocked test covers its controller.
+| Check | Result |
+|---|---|
+| Load/upgrade/reconnect | **PARTIAL.** The unpacked 2.0.0 extension loaded enabled from `extension/`; its `chrome://extensions` card showed no Errors section and the initial worker console had no messages. Automated popup connectivity passed. During later manual navigation work, the popup remained at “Checking this tab… / Connecting to Chrome”; extension reload/update recovery was not completed. |
+| Pin already-open page | **PASS.** Installed E2E and a manual fixture click each branched once after connection; the source stayed on the same document with its unsaved input intact. Enter-key branching also passed in E2E. |
+| Pin immediately then click | **NOT RUN.** The asynchronous pin/readiness interval remains uncharacterized manually. |
+| Iframe `_top`, fragments, and `_parent` | **PASS (installed E2E).** Different-document `_top` fragments and direct-child `_parent` targets branched; a matching top-document fragment stayed native; nested `_parent` and frame-local links stayed within their frame. |
+| Unpin/disabled/native regression | **PASS (installed E2E).** Unpin, manual protection on an unpinned tab, master disable, and native same-origin navigation behaved as expected. |
+| Three routing choices | **PASS (installed E2E).** Current-window branching, a new Chrome window, and a shared browsing window were exercised without replacing the source or the first branch. |
+| Focus choices | **PARTIAL.** Follow/stay preferences and active-tab results passed in E2E. macOS window focus with minimized/background windows was not manually checked. |
+| Solo action | **PASS (installed E2E).** A live page moved without reload; exploration opened outside its reserved window. |
+| Grid/layout and window placement | **PARTIAL.** A real four-window workspace adopted live pages and preserved document state. Physical bounds, monitor scaling, and visual placement of the arranged windows were not inspected. |
+| Simultaneous branches | **PARTIAL.** Two branches shared the designated browsing window without replacing each other; four simultaneous link branches into one destination window were not run. |
+| Native extra tab | **PASS (installed E2E).** Command-click, middle-click, `target=_blank`, download behavior, and reserved-window relocation passed on macOS Chrome. |
+| Forms/download/auth | **PARTIAL.** GET submitter overrides, one native POST, password GET exclusion, and downloads passed. A real authentication flow was not tested. |
+| SPA route coverage | **PASS (installed E2E).** Eligible anchor links branched before the router; unprotected trusted SPA clicks and `pushState` remained native and retained the live document. |
+| Actual address-bar navigation | **FAIL — acceptance not met.** With recovery enabled and the local source pinned, I entered a fixture URL in Chrome’s actual address bar. Chrome emitted `transitionType: typed` with `from_address_bar`, but the pinned page navigated instead of returning to its saved URL in a separate branch; the unsaved field was lost. This is separate from the passing CDP typed-navigation simulation in E2E. The popup also showed “Connecting to Chrome” during later manual attempts, so address-bar recovery and readiness need a headed retest after a fix. |
+| Same-URL pending recovery race | **SKIP — unresolved.** E2E could not observe a post-create pending interval before recovery committed. No equivalent manual post-create same-URL race was reproduced. The skip is not a pass; manual investigation remains required. |
+| Back/Forward, reload, redirect, and script navigation | **PARTIAL.** HTTP redirect branching, JavaScript-only native navigation, and `pushState` observation passed E2E. Actual Back/Forward and reload behavior on the pinned source were not manually checked. |
+| Pause and arrange | **PASS (installed E2E).** Arrange-only preserved a five-minute workspace pause and live document state; native navigation remained available while paused. |
+| Closed/moved pages | **NOT RUN manually.** Remove-and-readd binding, failed move followed by manual drag, and close/release behavior need live interaction checks. |
+| Workspace definitions | **PARTIAL.** Installed E2E saved/opened a four-page workspace through the extension worker, reused bindings, and released without reload. Delayed Save/Open UI, remove-and-readd, and failed-move/manual-drag flows were not verified with the installed workspace UI. |
+| Worker suspend/restart | **PASS (final headless installed E2E).** The real service-worker target was closed and disappeared; a subsequent runtime request returned the saved manual-protection and preference state, and a worker target was visible again. Natural Chrome suspension was not tested. |
+| Browser/extension restart | **NOT RUN.** Extension reload/update and browser restart were not tested. |
+| Display removal/scaling and permission changes | **PARTIAL.** Display state was reported without granting optional access. Revocation was **SKIPPED** because `system.display` was not granted in the isolated profile; physical monitor removal/scaling was not tested. |
+| Accessibility | **NOT RUN manually.** Keyboard navigation coverage exists for Enter and modifier clicks; zoom, full focus order, reduced motion, and screen-reader behavior remain. |
+| Real dashboards | **NOT RUN.** Only the fictional local fixture was used. |
+
+Fixture evidence: [protected source with unsaved input](acceptance-screenshots/protected-source.png) and [connected protection popup](acceptance-screenshots/connected-protection-popup.png). The screenshots contain only local fictional data.
+
+### Error and environment notes
+
+The initial installed extension card showed no extension Errors section; the initial service-worker console was empty. A later DevTools diagnostic snippet entered during investigation had a syntax error in the diagnostic itself. No extension-source runtime error was observed. The headed E2E run did not complete the final worker identity assertion; the corrected termination check passed in headless Chromium. The detailed per-case outcomes and skip reasons are in [browser-test-results.json](browser-test-results.json).

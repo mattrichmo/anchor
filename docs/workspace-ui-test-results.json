@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
   "date": "2026-10-05",
-  "browser": "Chromium 151.0.7922.173",
+  "browser": "Chromium 143.0.7499.4",
   "method": "Real workspace UI and validation scripts, explicit mocked Chrome API fixtures on about:blank. No installed-extension behavior or OS window movement is proven.",
   "tests": [
     {

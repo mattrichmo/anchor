@@ -5,7 +5,8 @@ No mocks are used for pinning, opening tabs, messages, or navigation.
 from pathlib import Path
 from datetime import datetime,timezone
 import os,sys,json,time,tempfile,subprocess,shutil,urllib.request,traceback
-from playwright.sync_api import sync_playwright,TimeoutError as PlaywrightTimeoutError
+import platform
+from playwright.sync_api import sync_playwright,TimeoutError as PlaywrightTimeoutError,expect
 ROOT=Path(__file__).resolve().parents[2]
 BASE='http://127.0.0.1:8765'
 OUT=ROOT/'docs';OUT.mkdir(exist_ok=True)
@@ -13,11 +14,16 @@ RESULTS=[]
 class SkipCase(Exception):pass
 MANIFEST=json.loads((ROOT/'extension/manifest.json').read_text())
 BUILD=MANIFEST.get('version','unknown')
+BUILD_INFO=json.loads((OUT/'BUILD-INFO.json').read_text()) if (OUT/'BUILD-INFO.json').exists() else {}
 def report_base():
     now=datetime.now(timezone.utc)
+    try:commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    except Exception:commit='unknown'
     return {'build':BUILD,'date':now.date().isoformat(),
         'recorded_at_utc':now.isoformat(timespec='seconds'),
         'status':'NOT_RUN','browser_startup':'not attempted','managed_policy':'unchanged',
+        'tested_commit':commit,'extension_tree_sha256':BUILD_INFO.get('runtime_tree_sha256'),
+        'os':platform.platform(),
         'tests':[],'passed':0,'failed':0,'skipped':0}
 def write_report(report):
     (OUT/'browser-test-results.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -65,7 +71,17 @@ try:
             result=ui.evaluate('(message) => chrome.runtime.sendMessage(message)',message)
             assert result and result.get('ok'),result
             return result
-        def tabs():return worker.evaluate('() => chrome.tabs.query({})')
+        def tabs():return worker.evaluate('() => chrome.tabs.query({}).then(items => items.map(tab => ({url:null,...tab})))')
+        def tab_for_url(url):
+            return worker.evaluate("""async url => {
+              const deadline=Date.now()+5000;
+              while(Date.now()<deadline){
+                const tab=(await chrome.tabs.query({})).find(item=>item.url===url);
+                if(tab)return tab;
+                await new Promise(resolve=>setTimeout(resolve,25));
+              }
+              throw new Error(`No Chrome tab became visible at ${url}`);
+            }""",url)
         def wait_connected(tab_id):
             ui.wait_for_function("""async id => {
               const state=await chrome.runtime.sendMessage({type:'UI_STATE',tabId:id});
@@ -111,7 +127,7 @@ try:
             assert p.locator('#unsaved').input_value()=='unsaved fixture value'
             assert p.evaluate('window.anchorPreservedState.marker')==4711
             assert len(tabs())==before+1
-            assert not next(t for t in tabs() if t['url']==q.url)['pinned']
+            assert not tab_for_url(q.url)['pinned']
             return q
         def test(name,fn):
             started=time.monotonic()
@@ -125,7 +141,7 @@ try:
             p,_=prepare();branch(p,'#normal span','normal=1')
         test('Pin already-open tab: nested ordinary link branches; source document state preserved',normal)
         def foreground():
-            p,_=prepare();q=branch(p,'#normal','normal=1');assert next(t for t in tabs() if t['url']==q.url)['active']
+            p,_=prepare();q=branch(p,'#normal','normal=1');assert tab_for_url(q.url)['active']
         test('Foreground preference activates the branch',foreground)
         def background():
             p,ident=prepare(patch={'foreground':False});p.bring_to_front();branch(p,'#normal','normal=1');assert next(t for t in tabs() if t['id']==ident)['active']
@@ -171,9 +187,10 @@ try:
             with ctx.expect_page() as c:p.locator('#normal').press('Enter')
             q=c.value;q.wait_for_load_state();assert 'normal=1' in q.url;assert p.url==BASE+'/'
         test('Keyboard Enter on a protected link branches',keyboard)
-        def ctrl_click():
-            p,_=prepare();branch(p,'#normal','normal=1',{'modifiers':['Control']})
-        test('Ctrl-click retains native one-tab behavior',ctrl_click)
+        def modifier_click():
+            modifier='Meta' if sys.platform=='darwin' else 'Control'
+            p,_=prepare();branch(p,'#normal','normal=1',{'modifiers':[modifier]})
+        test('Platform-native Command/Ctrl-click retains one-tab behavior',modifier_click)
         def middle_click():
             p,_=prepare();branch(p,'#normal','normal=1',{'button':'middle'})
         test('Middle-click retains native one-tab behavior',middle_click)
@@ -275,7 +292,7 @@ try:
             p,ident=prepare();api({'type':'UI_RECONNECT','tabId':ident});api({'type':'UI_RECONNECT','tabId':ident});branch(p,'#normal','normal=1')
         test('Repeated reinjection does not add duplicate listeners',reinject)
         def pinned_placement():
-            p,ident=prepare();other=ctx.new_page();other.goto(BASE+'/?other=1');oid=get_id(other);worker.evaluate('(id)=>chrome.tabs.update(id,{pinned:true})',oid);q=branch(p,'#normal','normal=1');all_tabs=tabs();dest=next(t for t in all_tabs if t['url']==q.url);assert dest['index']>=len([t for t in all_tabs if t['pinned']])
+            p,ident=prepare();other=ctx.new_page();other.goto(BASE+'/?other=1');oid=get_id(other);worker.evaluate('(id)=>chrome.tabs.update(id,{pinned:true})',oid);q=branch(p,'#normal','normal=1');all_tabs=tabs();dest=tab_for_url(q.url);assert dest['index']>=len([t for t in all_tabs if t['pinned']])
         test('Branch placement respects Chrome’s pinned-tab boundary',pinned_placement)
         def redirect():
             p,_=prepare();branch(p,'#redirect','redirected=1')
@@ -347,26 +364,40 @@ try:
         def persistence():
             p,ident=prepare(pinned=False,manual=True);api({'type':'UI_SETTINGS','patch':{'foreground':False}})
             # Terminate the real extension worker, then wake it with a runtime request.
-            cdp=ctx.new_cdp_session(p);targets=cdp.send('Target.getTargets')['targetInfos'];target=next(t for t in targets if t['type']=='service_worker' and extension_id in t['url'])
+            # Target management belongs to the browser CDP session. A page-scoped
+            # session can return success without stopping the extension worker.
+            cdp=ctx.browser.new_browser_cdp_session();cdp.send('Target.setDiscoverTargets',{'discover':True})
+            targets=cdp.send('Target.getTargets')['targetInfos'];target=next(t for t in targets if t['type']=='service_worker' and extension_id in t['url'])
             cdp.send('Target.closeTarget',{'targetId':target['targetId']})
-            with ctx.expect_event('serviceworker',timeout=10000) as restarted:
-                state=api({'type':'UI_STATE','tabId':ident})
-            assert extension_id in restarted.value.url
+            deadline=time.monotonic()+5
+            while time.monotonic()<deadline:
+                targets=cdp.send('Target.getTargets')['targetInfos']
+                if not any(t['targetId']==target['targetId'] for t in targets):break
+                time.sleep(.05)
+            assert not any(t['targetId']==target['targetId'] for t in targets),'The original service-worker target remained after Target.closeTarget.'
+            state=api({'type':'UI_STATE','tabId':ident})
+            deadline=time.monotonic()+10;restarted=None
+            while time.monotonic()<deadline:
+                targets=cdp.send('Target.getTargets')['targetInfos']
+                restarted=next((t for t in targets if t['type']=='service_worker' and extension_id in t['url']),None)
+                if restarted:break
+                time.sleep(.05)
+            assert restarted,'The extension did not expose a running service-worker target after the post-termination runtime request.'
             assert state['snapshot']['active'];assert state['snapshot']['reason']=='manual';assert state['settings']['foreground'] is False
         # The worker restart case runs after UI cases because it replaces the worker handle.
         def settings_ui():
-            p,ident=prepare();ui.reload();ui.wait_for_function('document.querySelector("#protectPinned").checked')
-            ui.locator('#foreground').select_option('false');ui.wait_for_function('document.querySelector("#saved").textContent.includes("Saved")');assert api({'type':'UI_STATE'})['settings']['foreground'] is False
+            p,ident=prepare();ui.reload();expect(ui.locator('#protectPinned')).to_be_checked()
+            ui.locator('#foreground').select_option('false');expect(ui.locator('#saved')).to_contain_text('Saved');assert api({'type':'UI_STATE'})['settings']['foreground'] is False
             ui.locator('#rule-origin').fill(BASE);ui.locator('#rule-mode').select_option('same-origin');ui.locator('#rule-form button').click();ui.wait_for_selector('.rule-item');assert api({'type':'UI_STATE'})['settings']['rules'][0]['mode']=='same-origin'
             ui.locator('.rule-item button').click();ui.wait_for_selector('.empty');assert api({'type':'UI_STATE'})['settings']['rules']==[]
         test('Settings UI persists preferences and adds/removes exact-origin rules',settings_ui)
         def popup_ui():
             p,ident=prepare();active=api({'type':'UI_STATE','tabId':ident});assert active['snapshot']['active'] and active['connected']
             pop=ctx.new_page();pop.goto('chrome-extension://'+extension_id+'/ui/popup.html?tab='+str(ident))
-            pop.wait_for_function('document.querySelector("#badge").textContent==="Pinned" && document.querySelector("#connection").hidden')
-            pop.locator('[data-mode="same-origin"]').click();pop.wait_for_function('document.querySelector("[data-mode=\\"same-origin\\"]").getAttribute("aria-pressed")=="true"')
+            expect(pop.locator('#badge')).to_have_text('Pinned');expect(pop.locator('#connection')).to_be_hidden()
+            pop.locator('[data-mode="same-origin"]').click();expect(pop.locator('[data-mode="same-origin"]')).to_have_attribute('aria-pressed','true')
             state=api({'type':'UI_STATE','tabId':ident});assert state['snapshot']['mode']=='same-origin' and state['snapshot']['active'] and state['connected']
-            pop.locator('#pause').click();pop.wait_for_function('document.querySelector("#badge").textContent==="Paused"')
+            pop.locator('#pause').click();expect(pop.locator('#badge')).to_have_text('Paused')
             assert api({'type':'UI_STATE','tabId':ident})['snapshot']['reason']=='paused'
         test('Popup reports connected protection, changes mode and pauses through active state',popup_ui)
         def export_import():
@@ -399,10 +430,10 @@ try:
             p,_=prepare();before=len(tabs());p.evaluate("window.postMessage({type:'ANCHOR_OPEN_LINK',url:'http://localhost:8765/destination?spoof=1'},'*')");time.sleep(.2);assert len(tabs())==before
         test('Page-world postMessage cannot invoke extension navigation',page_spoof)
         def separate_window():
-            p,ident=prepare(patch={'destination':'new-window'});wid=next(t['windowId'] for t in tabs() if t['id']==ident);q=branch(p,'#normal','normal=1');assert next(t['windowId'] for t in tabs() if t['url']==q.url)!=wid
+            p,ident=prepare(patch={'destination':'new-window'});wid=next(t['windowId'] for t in tabs() if t['id']==ident);q=branch(p,'#normal','normal=1');assert tab_for_url(q.url)['windowId']!=wid
         test('New-window destination opens a real separate window and preserves the source document',separate_window)
         def shared_browsing():
-            p,ident=prepare(patch={'destination':'browsing-window','foreground':False});first=branch(p,'#normal','normal=1');second=branch(p,'#external','external=1');alltabs=tabs();firstw=next(t['windowId'] for t in alltabs if t['url']==first.url);assert firstw==next(t['windowId'] for t in alltabs if t['url']==second.url);assert firstw!=next(t['windowId'] for t in alltabs if t['id']==ident)
+            p,ident=prepare(patch={'destination':'browsing-window','foreground':False});first=branch(p,'#normal','normal=1');second=branch(p,'#external','external=1');firstw=tab_for_url(first.url)['windowId'];assert firstw==tab_for_url(second.url)['windowId'];assert firstw!=next(t['windowId'] for t in tabs() if t['id']==ident)
         test('Two real branches share the designated browsing window without replacing the first',shared_browsing)
         def solo_window():
             p,ident=prepare();p.evaluate('window.anchorPreservedState={marker:999}');api({'type':'UI_SOLO','tabId':ident});wid=next(t['windowId'] for t in tabs() if t['id']==ident);assert sum(t['windowId']==wid for t in tabs())==1;assert p.evaluate('window.anchorPreservedState.marker')==999;branch(p,'#normal','normal=1');assert sum(t['windowId']==wid for t in tabs())==1
@@ -425,12 +456,16 @@ try:
         test('Real four-window workspace adopts live pages, reuses bindings, and releases without reload',grid_workspace)
         # Capture real built UI after all functional cases, with actual connected/pinned state.
         def screenshots():
-            p,ident=prepare(url='/?showcase=1');p.screenshot(path=str(ROOT/'store/screenshots/source-dashboard.png'))
-            pop=ctx.new_page();pop.set_viewport_size({'width':392,'height':600});pop.goto(f'chrome-extension://{extension_id}/ui/popup.html?tab={ident}');pop.wait_for_function('document.querySelector("#badge").textContent==="Pinned" && document.querySelector("#connection").hidden')
+            evidence=OUT/'acceptance-screenshots';evidence.mkdir(exist_ok=True)
+            p,ident=prepare(url='/?acceptance=1');p.locator('#unsaved').fill('Unsaved acceptance fixture value')
+            p.screenshot(path=str(evidence/'protected-source.png'),full_page=True)
+            p.screenshot(path=str(ROOT/'store/screenshots/source-dashboard.png'))
+            pop=ctx.new_page();pop.set_viewport_size({'width':392,'height':600});pop.goto(f'chrome-extension://{extension_id}/ui/popup.html?tab={ident}');expect(pop.locator('#badge')).to_have_text('Pinned');expect(pop.locator('#connection')).to_be_hidden()
+            pop.screenshot(path=str(evidence/'connected-protection-popup.png'),full_page=True)
             pop.locator('.popup').screenshot(path=str(ROOT/'store/screenshots/source-popup.png'))
             assert pop.evaluate('document.documentElement.scrollWidth')<=392
             assert pop.evaluate('document.body.clientHeight')<=600
-            ui.reload();ui.wait_for_function('document.querySelector("#protectPinned").checked');ui.screenshot(path=str(ROOT/'store/screenshots/02-settings-1280x800.png'))
+            ui.reload();expect(ui.locator('#protectPinned')).to_be_checked();ui.screenshot(path=str(ROOT/'store/screenshots/02-settings-1280x800.png'))
             ui.locator('#advanced').scroll_into_view_if_needed();ui.screenshot(path=str(ROOT/'store/screenshots/03-advanced-1280x800.png'))
             ui.set_viewport_size({'width':390,'height':844});ui.screenshot(path=str(ROOT/'store/screenshots/source-settings-mobile.png'));assert ui.evaluate('document.documentElement.scrollWidth')<=390
             ui.set_viewport_size({'width':1280,'height':800});welcome=ctx.new_page();welcome.goto(f'chrome-extension://{extension_id}/ui/welcome.html');welcome.screenshot(path=str(ROOT/'store/screenshots/04-welcome-1280x800.png'))
