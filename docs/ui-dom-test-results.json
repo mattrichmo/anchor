@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "date": "2026-10-05",
   "browser": "Chromium 151.0.7922.173",
-  "method": "Actual shipped DOM/UI scripts, rendered in about:blank with explicitly mocked Chrome extension APIs. NOT installed-extension E2E. No policy changes or blocked URL navigation.",
+  "method": "Actual shipped DOM/UI scripts with mocked Chrome APIs. General UI fixtures use about:blank; iframe and form navigation cases use synthetic HTTP origins served entirely through local Playwright routes. NOT installed-extension E2E. No policy changes or external requests.",
   "tests": [
     {
       "name": "Rendered popup fits a 392x600 viewport with accessible scrolling",
@@ -109,6 +109,42 @@
       "status": "PASS"
     },
     {
+      "name": "DOM top-document _parent link is handled as a top target",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM top-document _parent GET form is protected",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM top-document _parent POST form remains native",
+      "status": "PASS"
+    },
+    {
+      "name": "Cross-origin iframe _top fragment resolves against frame but is checked against top URL",
+      "status": "PASS"
+    },
+    {
+      "name": "Cross-origin iframe _top fragment is checked before the first snapshot arrives",
+      "status": "PASS"
+    },
+    {
+      "name": "Known-unprotected iframe top target stays a trusted native click",
+      "status": "PASS"
+    },
+    {
+      "name": "Readable matching top document keeps an iframe _top fragment natively trusted",
+      "status": "PASS"
+    },
+    {
+      "name": "Direct-child iframe _parent link and GET form reach top; POST remains native",
+      "status": "PASS"
+    },
+    {
+      "name": "Nested iframe _parent navigation stays in its immediate parent context",
+      "status": "PASS"
+    },
+    {
       "name": "DOM same-origin policy distinguishes internal and external links",
       "status": "PASS"
     },
@@ -122,6 +158,10 @@
     },
     {
       "name": "DOM GET-form serialization preserves submitter and replaces action query",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM form submit uses empty and invalid native overrides plus no-submitter GET",
       "status": "PASS"
     },
     {
@@ -165,6 +205,10 @@
       "status": "PASS"
     },
     {
+      "name": "DOM guard accepts a lower revision only for its exact same-document reset handshake",
+      "status": "PASS"
+    },
+    {
       "name": "Popup routes destination preferences through tab-scoped messages",
       "status": "PASS"
     },
@@ -177,6 +221,6 @@
       "status": "PASS"
     }
   ],
-  "passed": 43,
+  "passed": 54,
   "failed": 0
 }

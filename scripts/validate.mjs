@@ -8,6 +8,8 @@ const manifest=JSON.parse(await readFile(resolve(root,'manifest.json'),'utf8'));
 assert.equal(manifest.manifest_version,3);assert(manifest.description.length<=132);
 assert(manifest.name.length<=75);assert.equal(manifest.incognito,'not_allowed');
 assert.deepEqual(manifest.optional_permissions,['system.display']);
+assert(/(?:^|;)\s*connect-src 'none'(?:;|$)/.test(manifest.content_security_policy.extension_pages));
+assert(/(?:^|;)\s*default-src 'none'(?:;|$)/.test(manifest.content_security_policy.extension_pages));
 assert.equal(manifest.version,JSON.parse(await readFile(resolve(root,'../package.json'),'utf8')).version);
 assert.deepEqual(manifest.permissions,['storage','scripting','contextMenus','alarms','webNavigation']);
 const files=[manifest.background.service_worker,manifest.action.default_popup,manifest.options_ui.page,...Object.values(manifest.icons),...manifest.content_scripts.flatMap(s=>s.js)];

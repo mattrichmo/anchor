@@ -2,15 +2,24 @@
 
 Four independent read-only engineering reviewers examined navigation, state/workspaces, security boundaries, and experience/test coverage. The parent reviewed their source evidence and consolidated overlapping findings. Review base: GitHub `main` at `aa210937eb6ad7b7268234264782c5bc37fe781f` (same source tree as local `94c59d2`).
 
-This report describes work still needed. This commit updates documentation; it does not fix the runtime findings below. P1/P2/P3 denote engineering priority, not security severity or a claim of exploitation. The formal Codex Security scan workflow was unavailable because its required reference resources could not be read; these are ordinary source-based reviews with the reproduction limits stated per finding.
+The findings below preserve the original review evidence. A follow-up implementation addresses H1–H9 and adds session validation, startup reconciliation, adoption preflight, and restrictive UI CSP. Installed Chrome acceptance and broader URL-change coverage remain open. P1/P2/P3 denote engineering priority, not security severity or a claim of exploitation. The formal Codex Security scan workflow was unavailable because its required reference resources could not be read; these are ordinary source-based reviews with the reproduction limits stated per finding.
 
-## Recommended order
+## Implementation status
 
-1. Fix the three P1 correctness bugs: iframe top-page fragment navigation, workspace async editor identity, and anchor re-add reconciliation.
-2. Repair the obsolete installed-browser assertions, then obtain a real permitted-Chrome acceptance run. Mocked tests cannot demonstrate protection of a live pinned document.
-3. Fix move ownership, pause preservation, `_parent` targets, and recovery generation checks; add failure/delay regressions before changing navigation guarantees.
-4. Investigate full URL-change coverage with fixtures that measure original document identity, unsaved fields, and history as well as the URL. Address-bar reload recovery must not be presented as preserving the original page.
-5. Improve session-state restoration, form submission compatibility, and restrictive local UI network policy.
+| Finding | Implemented response | Regression layer |
+| --- | --- | --- |
+| H1, H6 | Evaluate top-directed iframe links/forms against the protected top URL; resolve `_parent` by actual context | Worker and rendered guard fixtures; installed scenarios added |
+| H2 | Capture immutable operation identity and editor revision; serialize related editor mutations | Delayed-response rendered editor fixtures |
+| H3 | Release/transfer bindings by anchor identity | Workspace worker fixtures |
+| H4 | Track expected move destinations and operation identity; clean failed leases | Move failure/manual attachment fixtures |
+| H5 | Preserve pause deadlines during arrange-only | Workspace worker fixtures |
+| H7 | Track synchronous navigation generations and reject pending newer navigation | Worker recovery fixtures |
+| H8 | Assert semantic connected/active popup state | Updated installed suite; live execution gate remains open |
+| H9 | Distinguish absent submitter attributes from native empty overrides | Rendered native DOM form fixtures |
+
+Additional changes validate restored tab/runtime shapes, reconcile live ownership on startup, preflight selected pages before adopting any, and block UI network/form requests through CSP. See [test report](TEST-REPORT.md) for the final counts and limitations.
+
+The remaining priority is a permitted installed Chrome run of [manual acceptance](MANUAL-ACCEPTANCE.md), especially original document and unsaved-state preservation. Browser history, arbitrary redirects, SPA changes, and address-bar actions are not now an all-navigation lock.
 
 ## Findings
 
@@ -102,7 +111,7 @@ This report describes work still needed. This commit updates documentation; it d
 
 **Fix/test:** Preserve missing-versus-empty semantics and use effective native submission rules. Test empty/nonempty overrides, invalid methods, parent POST/GET, and no submitter.
 
-## Additional resilience work
+## Additional resilience scope
 
 - Validate persisted session record/runtime shapes before restoring them. The stores are trusted extension storage; this addresses malformed or older state, not a demonstrated website attack. See [state.js](../src/background/state.js#L22) and [workspace-state.js](../src/background/workspace-state.js#L17).
 - Reconcile runs/reserved membership with live tabs/windows on worker startup and preflight all selected pages before mutating the first workspace anchor.
@@ -111,4 +120,4 @@ This report describes work still needed. This commit updates documentation; it d
 
 ## Documentation correction and verification
 
-README now leads with pinned-tab protection and explicitly maps navigation actions to current behavior. Its Arrange open pages instructions now explain refusal when any saved page is missing. All local README/report references and diff whitespace are checked before publication. Existing 229 unit and 61 rendered UI results are historical baseline evidence; they do not cover all newly reported issues. No new installed-extension pass or exhaustive security audit is claimed.
+README leads with pinned-tab protection and explicitly maps navigation actions to current behavior. Its Arrange open pages instructions now explain refusal when any saved page is missing. All local README/report references and diff whitespace are checked before publication. Existing 229 unit and 61 rendered UI results are historical baseline evidence; the follow-up counts are recorded in the test report. No new installed-extension pass or exhaustive security audit is claimed.

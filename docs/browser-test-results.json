@@ -1,11 +1,17 @@
 {
   "build": "2.0.0",
-  "date": "2026-10-03",
+  "date": "2026-10-05",
+  "recorded_at_utc": "2026-10-05T21:34:48+00:00",
   "status": "NOT_RUN",
-  "phase": "extension startup",
+  "browser_startup": "launched",
+  "managed_policy": "unchanged",
   "tests": [],
   "passed": 0,
   "failed": 0,
-  "reason": "No extension service worker appeared. Inspect chrome://extensions for loading errors and chrome://policy for installation restrictions. Use a browser/profile where unpacked extension installation is permitted; do not alter managed restrictions.",
+  "skipped": 0,
+  "phase": "extension startup",
+  "attempted_browser": "/usr/lib/chromium/chromium",
+  "browser_version": "151.0.7922.173",
+  "reason": "The browser launched, but no extension service worker appeared. Check chrome://extensions and chrome://policy. Use a profile where unpacked extension installation is permitted; do not alter managed restrictions.",
   "error": "Timeout 30000ms exceeded while waiting for event \"serviceworker\""
 }

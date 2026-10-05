@@ -20,7 +20,7 @@ No account or subscription. Settings stay on your device. No analytics or Anchor
 
 ## Install in Chrome
 
-This repository includes an unpacked **2.0.0 beta** for Chrome 123 or later. A Chrome Web Store installation link is not available yet. Known protection and workspace edge cases are tracked in the [hardening review](docs/HARDENING-REVIEW.md).
+This repository includes an unpacked **2.0.0 beta** for Chrome 123 or later. A Chrome Web Store installation link is not available yet. The [hardening review](docs/HARDENING-REVIEW.md) tracks fixes, regression evidence, and the remaining live Chrome acceptance work.
 
 1. [Download the repository ZIP](https://github.com/mattrichmo/anchor/archive/refs/heads/main.zip) and extract it into a folder you’ll keep. If you already cloned the repository, use that folder.
 2. Open `chrome://extensions` and turn on **Developer mode**.
@@ -145,7 +145,7 @@ Loading a different folder may create a separate installation. Disable the old c
 
 ## For contributors
 
-The [hardening review](docs/HARDENING-REVIEW.md) records the prioritized next steps, source evidence, and proposed regression checks from independent read-only reviews. Navigation coverage and dependable protection state come first.
+The [hardening review](docs/HARDENING-REVIEW.md) records the independent findings, implemented fixes, and regression evidence. Broader navigation coverage and installed Chrome acceptance remain priorities.
 
 
 Source files live in `src/` and `public/`; the build copies them to `extension/`. Edit source files and rebuild rather than editing only the generated extension. Node 20+ and Python 3.10+ are development tools.

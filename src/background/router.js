@@ -1,5 +1,5 @@
 import '../shared/core.js';
-import {runtime, workspaceReady, updateRuntime, serial, beginOperation, endOperation, recordBranch, markMove} from './workspace-state.js';
+import {runtime, workspaceReady, updateRuntime, serial, beginOperation, endOperation, recordBranch, markMove, clearMove, setMoveExpected} from './workspace-state.js';
 const C=globalThis.AnchorCore;
 export function destinationKey(snapshot) {return snapshot.workspaceId||'default';}
 export async function normalWindow(id, exclude) {
@@ -66,20 +66,57 @@ export async function relocateTab(tab,key,foreground=false,sourceId,destination=
   return serial(`destination:${key}`,async()=>{
     if(tab.incognito)throw new Error('Private tabs are not supported.');
     if(destination==='new-window'){
-      await markMove(tab.id);
-      const op=`native:${tab.id}`;await beginOperation(op,'Moving a native link to a new window');
-      const created=await chrome.windows.create({tabId:tab.id,type:'normal',incognito:false,focused:foreground});
-      if(!Number.isInteger(created?.id))throw new Error('Chrome did not confirm the new window.');
-      await endOperation(op);if(sourceId)await recordBranch(tab.id,sourceId);
-      return chrome.tabs.get(tab.id);
+      const existingWindowIds=(await chrome.windows.getAll({windowTypes:['normal']})).map(win=>win.id).filter(Number.isInteger);
+      const expected={kind:'new-window',fromWindowId:tab.windowId,existingWindowIds},op=`native:${tab.id}`;
+      await beginOperation(op,'Moving a native link to a new window');
+      const moveId=await markMove(tab.id,expected);let current;
+      try{
+        const created=await chrome.windows.create({tabId:tab.id,type:'normal',incognito:false,focused:foreground});
+        if(!Number.isInteger(created?.id))throw new Error('Chrome did not confirm the new window.');
+        await setMoveExpected(tab.id,moveId,{kind:'window',windowId:created.id});
+        current=await chrome.tabs.get(tab.id);await endOperation(op);
+      }catch(error){
+        try{current=await chrome.tabs.get(tab.id);}catch{}
+        if(current&&current.windowId!==expected.fromWindowId&&!expected.existingWindowIds.includes(current.windowId)){
+          await setMoveExpected(tab.id,moveId,{kind:'window',windowId:current.windowId});await endOperation(op);
+        }else{
+          if(current){await clearMove(tab.id,moveId);await endOperation(op);}
+          throw error;
+        }
+      }
+      if(sourceId)await recordBranch(tab.id,sourceId);
+      return current;
     }
     const win=await normalWindow(runtime.browsing[key],tab.windowId);
-    await markMove(tab.id);
     let moved;
-    if(win){moved=await chrome.tabs.move(tab.id,{windowId:win.id,index:-1});if(Array.isArray(moved))moved=moved[0];}
+    if(win){
+      const moveId=await markMove(tab.id,{kind:'window',windowId:win.id});
+      try{moved=await chrome.tabs.move(tab.id,{windowId:win.id,index:-1});if(Array.isArray(moved))moved=moved[0];}
+      catch(error){try{moved=await chrome.tabs.get(tab.id);}catch{}if(moved?.windowId!==win.id){if(moved)await clearMove(tab.id,moveId);throw error;}}
+      await setMoveExpected(tab.id,moveId,{kind:'window',windowId:win.id});
+    }
     else{
-      const created=await createDestinationWindow(key,{tabId:tab.id,focused:foreground});
-      moved=created.tabs?.find(t=>t.id===tab.id)||await chrome.tabs.get(tab.id);
+      const existingWindowIds=(await chrome.windows.getAll({windowTypes:['normal']})).map(item=>item.id).filter(Number.isInteger);
+      const expected={kind:'new-window',fromWindowId:tab.windowId,existingWindowIds},op=`destination:${key}`;
+      await beginOperation(op,'Creating a browsing window');
+      const moveId=await markMove(tab.id,expected);
+      try{
+        const created=await chrome.windows.create({tabId:tab.id,type:'normal',incognito:false,focused:foreground});
+        if(!Number.isInteger(created?.id))throw new Error('Chrome did not confirm the new window. Check open windows before retrying.');
+        await setMoveExpected(tab.id,moveId,{kind:'window',windowId:created.id});
+        await updateRuntime(r=>{r.browsing[key]=created.id;});
+        moved=created.tabs?.find(t=>t.id===tab.id)||await chrome.tabs.get(tab.id);
+        await endOperation(op);
+      }catch(error){
+        try{moved=await chrome.tabs.get(tab.id);}catch{}
+        if(moved&&moved.windowId!==expected.fromWindowId&&!expected.existingWindowIds.includes(moved.windowId)){
+          await setMoveExpected(tab.id,moveId,{kind:'window',windowId:moved.windowId});
+          await updateRuntime(r=>{r.browsing[key]=moved.windowId;});await endOperation(op);
+        }else{
+          if(moved){await clearMove(tab.id,moveId);await endOperation(op);}
+          throw error;
+        }
+      }
     }
     if(sourceId)await recordBranch(tab.id,sourceId);
     if(foreground)try{await focusTab(tab.id);}catch{}

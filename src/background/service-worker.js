@@ -9,6 +9,14 @@ const ready=Promise.all([stateReady,workspaceReady]);
 const C = globalThis.AnchorCore;
 const CONTENT_FILES = ['shared/core.js', 'content/guard.js'];
 const quiet = task => Promise.resolve(task).catch(() => {});
+// Increment synchronously with the browser event, before storage or tab calls
+// can yield. A same-URL second navigation is still a newer user intent.
+const mainNavigationGenerations = new Map();
+function noteMainNavigation(tabId) {
+  const generation=(mainNavigationGenerations.get(tabId)||0)+1;
+  mainNavigationGenerations.set(tabId,generation);
+  return generation;
+}
 function trustedUI(sender) {
   const root = chrome.runtime.getURL('ui/');
   return sender.id === chrome.runtime.id && typeof sender.url === 'string' && sender.url.startsWith(root);
@@ -61,7 +69,15 @@ async function handleContent(message, sender) {
     if (!['link','form'].includes(message.kind)) throw new Error('Invalid navigation kind.');
     const url = C.webUrl(message.url)?.href;
     if (!url) return {status:'native', snapshot};
-    const intent = {url, currentUrl: sender.url, kind:message.kind, method:message.method};
+    const target = typeof message.target === 'string' ? message.target.toLowerCase() : '';
+    if (target && !['_self','_top','_parent'].includes(target)) return {status:'native',snapshot};
+    // The href is resolved by the frame, but a target that actually reaches
+    // the top document must be evaluated against Chrome's live top-tab URL.
+    const targetReachesTop = target === '_top' ||
+      (target === '_parent' && (!sender.frameId || frame.parentFrameId === 0)) ||
+      ((target === '' || target === '_self') && !sender.frameId);
+    const intent = {url, currentUrl:targetReachesTop ? (tab.url || '') : sender.url,
+      kind:message.kind, method:message.method};
     if (C.decide(snapshot, intent) !== 'BRANCH') return {status:'native', snapshot};
     const result = await openBranch(tab, record, url, snapshot, `${sender.documentId}:${message.intentId}`);
     return {...result, snapshot};
@@ -272,6 +288,7 @@ chrome.contextMenus.onClicked.addListener((info,tab) => quiet(ready.then(async (
 // Snapshot prior URL before commit, including when the service worker just woke.
 chrome.webNavigation.onBeforeNavigate.addListener(details => {
   if (details.frameId !== 0) return;
+  noteMainNavigation(details.tabId);
   quiet(ready.then(() => withTab(details.tabId, async () => {
     const tab = await chrome.tabs.get(details.tabId), record = recordFor(tab);
     if (!record.currentUrl) record.currentUrl = tab.url || '';
@@ -282,19 +299,22 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
 // Browser navigation continues while our storage/window operations await.
 // Never recover a document that has already been superseded, including a
 // second pending navigation that has not committed yet.
-async function recoveryDocument(details) {
+async function recoveryDocument(details,generation,allowCurrentPending=false) {
+  if (mainNavigationGenerations.get(details.tabId) !== generation) return null;
   const tab = await chrome.tabs.get(details.tabId);
   const frame = await chrome.webNavigation.getFrame({tabId:details.tabId,frameId:0});
-  if (!details.documentId || frame?.documentId !== details.documentId ||
+  if (mainNavigationGenerations.get(details.tabId) !== generation ||
+      !details.documentId || frame?.documentId !== details.documentId ||
       frame.documentLifecycle !== 'active' || tab.url !== details.url ||
-      (tab.pendingUrl && tab.pendingUrl !== details.url)) return null;
+      (tab.pendingUrl && (!allowCurrentPending || tab.pendingUrl !== details.url))) return null;
   return tab;
 }
 chrome.webNavigation.onCommitted.addListener(details => {
   if (details.frameId !== 0) return;
+  const generation=mainNavigationGenerations.get(details.tabId)||0;
   quiet(ready.then(() => withTab(details.tabId, async () => {
     const tab = await chrome.tabs.get(details.tabId), record = recordFor(tab);
-    const liveDocument = await recoveryDocument(details);
+    const liveDocument = await recoveryDocument(details,generation,true);
     if (!liveDocument) return;
     const oldUrl = record.beforeUrl || record.currentUrl;
     const snapshot = C.makeSnapshot(settings,{...tab,url:oldUrl},record,Date.now());
@@ -307,7 +327,7 @@ chrome.webNavigation.onCommitted.addListener(details => {
       record.recoveryTripped = true;
       await persist(tab.id,record);
       const outcome = await openBranch(tab,record,details.url,snapshot,`recovery:${details.documentId}`);
-      if (outcome.status === 'opened' && await recoveryDocument(details))
+      if (outcome.status === 'opened' && await recoveryDocument(details,generation))
         await chrome.tabs.update(tab.id,{url:oldUrl});
     }
     await persist(tab.id,record);
@@ -328,6 +348,7 @@ function observeSameDocument(details) {
 // Observation only. Reversing history cannot restore a framework's in-memory state.
 chrome.webNavigation.onHistoryStateUpdated.addListener(observeSameDocument);
 chrome.webNavigation.onReferenceFragmentUpdated.addListener(observeSameDocument);
+chrome.tabs.onRemoved.addListener(tabId=>mainNavigationGenerations.delete(tabId));
 
 chrome.tabs.onCreated?.addListener(tab=>quiet(ready.then(()=>observeNewTab(tab))));
 chrome.tabs.onAttached?.addListener((id,info)=>quiet(ready.then(()=>onAttached(id,info))));

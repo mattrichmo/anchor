@@ -1,7 +1,7 @@
 import '../shared/core.js';
 import {settings,recordFor,persist,publish,withTab} from './state.js';
 import {validateWorkspace,validateArea,layoutCells,relocatable} from '../shared/workspace-model.js';
-import {library,runtime,workspaceReady,updateRuntime,saveWorkspace,replaceLibrary,serial,beginOperation,endOperation,markMove,isMoving,consumeMove} from './workspace-state.js';
+import {library,runtime,workspaceReady,updateRuntime,saveWorkspace,replaceLibrary,serial,beginOperation,endOperation,markMove,clearMove,setMoveExpected,isMoving,consumeMove} from './workspace-state.js';
 import {selectBrowsingWindow,normalWindow,relocateTab,focusTab} from './router.js';
 const C=globalThis.AnchorCore;
 const uid=()=>crypto.randomUUID();
@@ -21,28 +21,32 @@ async function resolveArea(w,fallback){
   return {area:validateArea(fallback),warning:w.displayId==='auto'?null:'Display access is unavailable; used the current display.'};
 }
 function savedRecord(record){return Object.fromEntries(['override','mode','homeUrl','destination','foreground','pausedUntil'].filter(k=>Object.hasOwn(record,k)).map(k=>[k,record[k]]));}
-async function adopt(w,a,tab){
+async function adopt(w,a,tab,{preservePause=false}={}){
   if(tab.incognito||!C.supported(tab.url))throw new Error('Only supported normal webpages can become anchors.');
   await withTab(tab.id,async()=>{
     const rec=recordFor(tab);
     if(rec.workspaceId&&rec.workspaceId!==w.id)throw new Error('This page already belongs to another workspace. Release it there first.');
     if(!rec.workspaceId)rec.beforeWorkspace=savedRecord(rec);
-    Object.assign(rec,{workspaceId:w.id,anchorId:a.id,override:true,mode:a.mode,homeUrl:a.url,destination:w.destination,foreground:w.foreground,pausedUntil:0});
+    Object.assign(rec,{workspaceId:w.id,anchorId:a.id,override:true,mode:a.mode,homeUrl:a.url,destination:w.destination,foreground:w.foreground});
+    if(!preservePause)rec.pausedUntil=0;
     await persist(tab.id,rec);await publish(tab,rec);
   });
   await updateRuntime(r=>{const run=r.runs[w.id]||={anchors:{}};run.anchors[a.id]=tab.id;});
 }
-export async function releaseTab(tabId){
+export async function releaseTab(tabId,expectedIdentity=null){
+  let released=false,identityStillMatches=null;
   try{await withTab(tabId,async()=>{
     const tab=await chrome.tabs.get(tabId),rec=recordFor(tab),wid=rec.workspaceId;
-    if(!wid)return;
+    identityStillMatches=!expectedIdentity||(wid===expectedIdentity.workspaceId&&rec.anchorId===expectedIdentity.anchorId);
+    if(!wid||!identityStillMatches)return;
     const old=rec.beforeWorkspace||{};
     for(const k of ['workspaceId','anchorId','beforeWorkspace','override','mode','homeUrl','destination','foreground','pausedUntil'])delete rec[k];
-    Object.assign(rec,old);await persist(tabId,rec);await publish(tab,rec);
+    Object.assign(rec,old);await persist(tabId,rec);await publish(tab,rec);released=true;
   });}catch{/* Closed tab; membership still needs removal. */}
   await updateRuntime(r=>{
-    for(const run of Object.values(r.runs))for(const [id,t]of Object.entries(run.anchors||{}))if(t===tabId)delete run.anchors[id];
-    for(const [id,res]of Object.entries(r.reserved)){res.members=res.members.filter(t=>t!==tabId);if(!res.members.length)delete r.reserved[id];}
+    let removed=false;
+    for(const [workspaceId,run]of Object.entries(r.runs))for(const [anchorId,t]of Object.entries(run.anchors||{}))if(t===tabId&&(!expectedIdentity||(workspaceId===expectedIdentity.workspaceId&&anchorId===expectedIdentity.anchorId))&&(identityStillMatches!==false)){delete run.anchors[anchorId];removed=true;}
+    if(removed&&(released||identityStillMatches!==false)||!expectedIdentity)for(const [id,res]of Object.entries(r.reserved)){res.members=res.members.filter(t=>t!==tabId);if(!res.members.length)delete r.reserved[id];}
   });
 }
 export async function releaseWorkspace(id){
@@ -52,52 +56,82 @@ export async function releaseWorkspace(id){
   // Deliberately do not close, merge, navigate, unpin, or reopen any tabs/windows.
 }
 async function registerWindows(w,tabs){
+  for(const tab of tabs){const reservation=runtime.reserved[tab.windowId];if(reservation&&reservation.workspaceId!==w.id)throw new Error('A selected page is in another workspace window. Move it to an ordinary window before adding it.');}
   await updateRuntime(r=>{
     for(const [id,res]of Object.entries(r.reserved))if(res.workspaceId===w.id)delete r.reserved[id];
-    if(w.reserved)for(const tab of tabs){const res=r.reserved[tab.windowId]||={workspaceId:w.id,members:[],foreground:w.foreground};res.members.push(tab.id);}
+    if(w.reserved)for(const tab of tabs){const current=r.reserved[tab.windowId];if(current&&current.workspaceId!==w.id)throw new Error('A selected page is in another workspace window. Move it to an ordinary window before adding it.');let res=current;if(!res)res=r.reserved[tab.windowId]={workspaceId:w.id,members:[],foreground:w.foreground};if(!res.members.includes(tab.id))res.members.push(tab.id);}
   });
 }
 async function moveToNewWindow(tab,w,key){
-  await markMove(tab.id);await beginOperation(key,'Moving a dashboard to its own window');
-  const win=await chrome.windows.create({tabId:tab.id,type:'normal',focused:false,incognito:false});
-  if(!Number.isInteger(win?.id))throw new Error('Chrome did not confirm the dashboard window.');
-  await endOperation(key);return chrome.tabs.get(tab.id);
+  const existingWindowIds=(await chrome.windows.getAll({windowTypes:['normal']})).map(win=>win.id).filter(Number.isInteger);
+  const expected={kind:'new-window',fromWindowId:tab.windowId,existingWindowIds};
+  await beginOperation(key,'Moving a dashboard to its own window');
+  const moveId=await markMove(tab.id,expected);
+  try{
+    const win=await chrome.windows.create({tabId:tab.id,type:'normal',focused:false,incognito:false});
+    if(!Number.isInteger(win?.id))throw new Error('Chrome did not confirm the dashboard window.');
+    await setMoveExpected(tab.id,moveId,{kind:'window',windowId:win.id});
+    await endOperation(key);return chrome.tabs.get(tab.id);
+  }catch(error){
+    let current=null;try{current=await chrome.tabs.get(tab.id);}catch{}
+    if(current&&current.windowId!==expected.fromWindowId&&!expected.existingWindowIds.includes(current.windowId)){
+      await setMoveExpected(tab.id,moveId,{kind:'window',windowId:current.windowId});
+      await endOperation(key);return current;
+    }
+    if(current){await clearMove(tab.id,moveId);await endOperation(key);}
+    throw error;
+  }
 }
 /** Explicit open only. Closed anchors are never resurrected by listeners or a timer. */
 export async function openWorkspace(id,{adoptIds={},area,arrangeOnly=false,browsingWindowId}={}){
   await workspaceReady;
   return serial(`workspace:${id}`,async()=>{
     const w=getWorkspace(id),resolved=await resolveArea(w,area),cells=layoutCells(w.layout,w.anchors.length,resolved.area,w.gap);
-    // Geometry validation happens before creating or moving any browser objects.
-    if(Number.isInteger(browsingWindowId))await selectBrowsingWindow(id,browsingWindowId);
-    const requested=w.anchors.map(a=>runtime.runs[id]?.anchors?.[a.id]??adoptIds[a.id]).filter(Number.isInteger);
-    if(new Set(requested).size!==requested.length)throw new Error('Choose a distinct browser tab for each anchor.');
-    const oldRun=runtime.runs[id];
-    if(arrangeOnly&&Object.keys(oldRun?.anchors||{}).length<w.anchors.length)throw new Error('Some dashboard pages are closed. Use Open workspace to reopen saved pages.');
-    const tabs=[];
+    const currentIds=new Set(w.anchors.map(a=>a.id)),oldRun=runtime.runs[id],oldAnchors={...(oldRun?.anchors||{})};
+    // Resolve and validate every existing page before the first state or browser mutation.
+    if(Number.isInteger(browsingWindowId)&&!await normalWindow(browsingWindowId))throw new Error('Choose a normal, non-dashboard browser window.');
+    const plan=[],selectedIds=new Set();
     for(const a of w.anchors){
-      let tab;
-      const bound=runtime.runs[id]?.anchors?.[a.id];
-      if(Number.isInteger(bound))try{tab=await chrome.tabs.get(bound);}catch{}
-      if(!tab&&Number.isInteger(adoptIds[a.id])){
-        tab=await chrome.tabs.get(adoptIds[a.id]);
-        if(C.webUrl(tab.url)?.href!==a.url)throw new Error('A selected page changed before it could be added. Select it again.');
-      }
+      const bound=oldAnchors[a.id];let tab=null,source='create';
+      if(Number.isInteger(bound)){try{tab=await chrome.tabs.get(bound);source='bound';}catch{}}
+      if(!tab&&Number.isInteger(adoptIds[a.id])){tab=await chrome.tabs.get(adoptIds[a.id]);source='adopt';}
+      if(tab){
+        if(!Number.isInteger(tab.id)||tab.incognito||!C.supported(tab.url))throw new Error('Only supported normal webpages can become anchors.');
+        if(source==='adopt'&&C.webUrl(tab.url)?.href!==a.url)throw new Error('A selected page changed before it could be added. Select it again.');
+        const rec=recordFor(tab);
+        if(rec.workspaceId&&rec.workspaceId!==id)throw new Error('This page already belongs to another workspace. Release it there first.');
+        const reservation=runtime.reserved[tab.windowId];
+        if(reservation&&reservation.workspaceId!==id)throw new Error('A selected page is in another workspace window. Move it to an ordinary window before adding it.');
+        if(source==='bound'&&(rec.workspaceId!==id||rec.anchorId!==a.id))throw new Error('A bound dashboard page changed. Refresh Workspaces and select it again.');
+        if(rec.workspaceId===id&&rec.anchorId!==a.id){
+          const oldAnchor=rec.anchorId;
+          if(currentIds.has(oldAnchor)||oldAnchors[oldAnchor]!==tab.id)throw new Error('This page already belongs to another anchor in the workspace.');
+        }
+        if(selectedIds.has(tab.id))throw new Error('Choose a distinct browser tab for each anchor.');
+        selectedIds.add(tab.id);
+      }else if(arrangeOnly)throw new Error('A dashboard was closed. Use Open workspace to reopen it.');
+      plan.push({anchor:a,tab,source});
+    }
+    if(arrangeOnly&&plan.some(entry=>!entry.tab))throw new Error('Some dashboard pages are closed. Use Open workspace to reopen saved pages.');
+    if(Number.isInteger(browsingWindowId))await selectBrowsingWindow(id,browsingWindowId);
+    // Release removed anchor identities before adopting a replacement. Cleanup is scoped
+    // to the old identity, so it cannot erase the replacement binding on the same tab.
+    for(const [anchorId,tabId]of Object.entries(oldAnchors))if(!currentIds.has(anchorId))await releaseTab(tabId,{workspaceId:id,anchorId});
+    const tabs=[];
+    for(const entry of plan){
+      const {anchor:a}=entry;let tab=entry.tab;
       if(!tab){
-        if(arrangeOnly)throw new Error('A dashboard was closed. Use Open workspace to reopen it.');
         const key=`anchor:${id}:${a.id}`;await beginOperation(key,'Opening a saved dashboard');
         const win=await chrome.windows.create({url:a.url,type:'normal',focused:false,incognito:false});
         tab=win?.tabs?.[0]||(Number.isInteger(win?.id)?(await chrome.tabs.query({windowId:win.id}))[0]:null);
         if(!tab?.id)throw new Error('Chrome did not confirm the dashboard tab. Check windows before retrying.');
         // URL can still be pending at this point; the chosen home is the intended initial URL.
         tab={...tab,url:tab.url&&C.supported(tab.url)?tab.url:a.url};
-        await adopt(w,a,tab);await endOperation(key);
-      }else await adopt(w,a,tab);
+      }
+      await adopt(w,a,tab,{preservePause:arrangeOnly});
+      if(!entry.tab)await endOperation(`anchor:${id}:${a.id}`);
       tabs.push(tab);
     }
-    // A definition edit can remove an anchor; release that binding without closing it.
-    const currentIds=new Set(w.anchors.map(a=>a.id));
-    for(const [anchorId,tabId]of Object.entries(runtime.runs[id]?.anchors||{}))if(!currentIds.has(anchorId))await releaseTab(tabId);
     const arranged=[];
     if(w.layout==='collection'){
       let first=await chrome.tabs.get(tabs[0].id);
@@ -107,7 +141,11 @@ export async function openWorkspace(id,{adoptIds={},area,arrangeOnly=false,brows
       arranged.push(first);
       for(const tab of tabs.slice(1)){
         const fresh=await chrome.tabs.get(tab.id);
-        if(fresh.windowId!==first.windowId){await markMove(tab.id);await chrome.tabs.move(tab.id,{windowId:first.windowId,index:-1});}
+        if(fresh.windowId!==first.windowId){
+          const moveId=await markMove(tab.id,{kind:'window',windowId:first.windowId});
+          try{await chrome.tabs.move(tab.id,{windowId:first.windowId,index:-1});}
+          catch(error){let current=null;try{current=await chrome.tabs.get(tab.id);}catch{}if(current&&current.windowId!==first.windowId){await clearMove(tab.id,moveId);throw error;}if(!current)throw error;}
+        }
         arranged.push(await chrome.tabs.get(tab.id));
       }
     }else{
@@ -130,7 +168,7 @@ export async function openWorkspace(id,{adoptIds={},area,arrangeOnly=false,brows
         if(Object.keys(cell).some(k=>Math.abs((actual[k]??cell[k])-cell[k])>16))warnings.push('Your window manager adjusted the requested window sizes or positions.');
       }catch{warnings.push('A window could not be arranged. Its page remains open; retry Arrange when it is available.');}
     }
-    await updateRuntime(r=>{const run=r.runs[id]||={anchors:{}};run.lastLayout={at:Date.now(),bounds,warnings:[...new Set(warnings)]};run.pausedUntil=0;});
+    await updateRuntime(r=>{const run=r.runs[id]||={anchors:{}};run.lastLayout={at:Date.now(),bounds,warnings:[...new Set(warnings)]};if(!arrangeOnly)run.pausedUntil=0;});
     // Protect any supported native-created branches that arrived during registration.
     for(const wid of unique)for(const t of await chrome.tabs.query({windowId:wid}))if(!arranged.some(a=>a.id===t.id))await observeNewTab(t);
     if(arranged[0])try{await focusTab(arranged[0].id);}catch{}
@@ -197,7 +235,7 @@ export async function processCandidate(id){
   });
 }
 export async function onAttached(id,info){
-  if(await consumeMove(id))return;
+  if(await consumeMove(id,info.newWindowId))return;
   const old=Object.values(runtime.reserved).find(res=>res.members.includes(id));
   if(old){
     const destination=runtime.reserved[info.newWindowId];
@@ -232,4 +270,3 @@ export async function openManager(){return serial('workspace-manager',async()=>{
   if(existing){await focusTab(existing.id);return;}
   await chrome.windows.create({url,type:'normal',focused:true,incognito:false});
 });}
-

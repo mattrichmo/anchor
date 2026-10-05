@@ -1,13 +1,14 @@
 {
   "product": "Anchor",
   "version": "2.0.0",
-  "date": "2026-10-03",
-  "status": "beta-handoff-live-acceptance-open",
+  "date": "2026-10-05",
+  "status": "hardening-regressions-passed-live-acceptance-open",
   "runtime_file_count": 29,
-  "runtime_tree_sha256": "ca5f3167147565aa8e8892b47bab0b25657e54c0700829398e54669b5f7588b2",
+  "runtime_tree_sha256": "137346309e1d8529ab856513c986c34a68a724a498328131ca8c31db7768c0fe",
   "tree_hash_algorithm": "SHA256 of concatenated sorted relative UTF-8 paths + NUL + file bytes",
   "runtime_dependencies": 0,
-  "node_tests_passed": 222,
-  "rendered_mock_api_checks_passed": 55,
-  "installed_extension_cases_executed": 0
+  "node_tests_passed": 247,
+  "rendered_mock_api_checks_passed": 74,
+  "installed_extension_cases_executed": 0,
+  "rendered_csp_checks_passed": 4
 }

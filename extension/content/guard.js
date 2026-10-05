@@ -12,10 +12,10 @@
   const guardId = gestureId();
   let toastHost = null;
   function alive() { try { return !!chrome.runtime.id; } catch { return false; } }
-  function acceptSnapshot(next) {
+  function acceptSnapshot(next, allowRevisionReset=false) {
     if(!next || !Number.isInteger(next.revision) || next.revision<1) return false;
     if(documentId && next.documentId && documentId!==next.documentId) return false;
-    if(snapshot && next.revision<snapshot.revision) return false;
+    if(snapshot && next.revision<snapshot.revision && !allowRevisionReset) return false;
     if(next.documentId)documentId=next.documentId;
     snapshot=next;return true;
   }
@@ -43,11 +43,32 @@
   function findLink(event) {
     return event.composedPath().find(n => n instanceof Element && n.matches('a[href],area[href]'));
   }
+  function linkTarget(node) {
+    return (node.getAttribute('target') || document.querySelector('base[target]')?.getAttribute('target') || '').toLowerCase();
+  }
+  function targetReachesTop(target) {
+    if (target === '_top') return true;
+    if (target === '_parent') return window === window.top || window.parent === window.top;
+    return (target === '' || target === '_self') && window === window.top;
+  }
   function targetIsNative(node) {
-    const target = (node.getAttribute('target') || document.querySelector('base[target]')?.getAttribute('target') || '').toLowerCase();
-    // Same-frame iframe links and named browsing contexts remain native; top escapes can branch.
-    if (window !== window.top) return !['_top'].includes(target);
-    return !!target && !['_self','_top','_parent'].includes(target);
+    const target = linkTarget(node);
+    // Frame-local and named-context navigations remain native. A parent target
+    // is guarded only when that browsing context is actually the top frame.
+    if (!['_self','_top','_parent'].includes(target) && target !== '') return true;
+    return !targetReachesTop(target);
+  }
+  function policyCurrentUrl(target) {
+    if (!targetReachesTop(target)) return location.href;
+    try { return window.top.location.href; } catch {}
+    return snapshot?.sourceUrl || location.href;
+  }
+  function mustAskWorker(target) {
+    if (window === window.top || !targetReachesTop(target)) return false;
+    // A cross-origin child cannot read the top URL. Let the worker compare the
+    // destination against Chrome's live tab URL, including before this frame
+    // receives its first snapshot. Same-origin children can decide natively.
+    try { void window.top.location.href; return false; } catch { return true; }
   }
   function cancel(event) { event.preventDefault();event.stopImmediatePropagation(); }
   function replay(node, submitter) {
@@ -90,41 +111,67 @@
     const node = findLink(event);
     if (!node || replaying.has(node) || node.hasAttribute('download') || targetIsNative(node) ||
       node.isContentEditable || node.closest('[contenteditable="true"]')) return;
+    const target = linkTarget(node);
     const raw = node.getAttribute('href')?.trim();
     if (raw === undefined || raw === null) return;
     let url;try{url=new URL(raw,document.baseURI).href;}catch{return;}
     if (!C.webUrl(url)) return;
-    const intent = {url,kind:'link',currentUrl:location.href};
+    const currentUrl = policyCurrentUrl(target);
+    const intent = {url,kind:'link',currentUrl,target};
+    const workerMustResolveTop = mustAskWorker(target);
     // Unknown initial state is resolved in the worker. Known unprotected clicks
     // stay genuinely native: no stopPropagation, target mutation or synthetic replay.
-    if (snapshot && C.decide(snapshot,intent) !== 'BRANCH') return;
-    if (!snapshot && C.fragmentOnly(location.href,url)) return;
+    if (snapshot) {
+      const decision=C.decide(snapshot,intent);
+      const onlyTopFragmentIsUncertain=workerMustResolveTop && decision!=='BRANCH' &&
+        C.decide({...snapshot,branchHashes:true},intent)==='BRANCH';
+      if (!snapshot.active || (decision!=='BRANCH' && !onlyTopFragmentIsUncertain)) return;
+    }
+    if (!snapshot && !workerMustResolveTop && C.fragmentOnly(currentUrl,url)) return;
     cancel(event);void send(intent,node);
   }
   function submit(event) {
     if (!alive() || !snapshot?.active || !snapshot.protectGetForms || !event.isTrusted || event.defaultPrevented || !event.cancelable) return;
     const form = event.target, button = event.submitter;
     if (!(form instanceof HTMLFormElement) || replaying.has(form)) return;
-    const method = (button?.getAttribute('formmethod') || form.getAttribute('method') || 'get').toLowerCase();
+    // Use the effective DOM properties: empty or invalid enumerated overrides
+    // have native defaults that differ from truthiness-based attribute fallback.
+    const rawMethod = (button?.hasAttribute('formmethod') ? button.formMethod : form.method).toLowerCase();
+    const method = ['get','post','dialog'].includes(rawMethod) ? rawMethod : 'get';
     if (method !== 'get' || Array.from(form.elements).some(field => field instanceof HTMLInputElement && ['password','file'].includes(field.type))) return;
-    const target = (button?.getAttribute('formtarget') ?? form.getAttribute('target') ?? document.querySelector('base[target]')?.getAttribute('target') ?? '').toLowerCase();
-    if (target && !['_self','_top'].includes(target)) return;
-    if (window !== window.top && target !== '_top') return;
+    const rawTarget = button?.hasAttribute('formtarget') ? button.formTarget :
+      (form.getAttribute('target') ?? document.querySelector('base[target]')?.getAttribute('target') ?? '');
+    const target = rawTarget.toLowerCase();
+    if (target && !['_self','_top','_parent'].includes(target)) return;
+    if (!targetReachesTop(target)) return;
     if (button?.getAttribute('type')?.toLowerCase() === 'image') return;
-    const raw = button?.getAttribute('formaction') || form.getAttribute('action') || location.href;
-    let url;try{url=new URL(raw,document.baseURI);}catch{return;}
+    const raw = button?.hasAttribute('formaction') ? button.formAction : form.action;
+    let url;try{url=new URL(raw);}catch{return;}
     if (!C.webUrl(url.href)) return;
-    const fields = new FormData(form,button);
+    const fields = button ? new FormData(form,button) : new FormData(form);
     const params = new URLSearchParams();
     for (const [key,value] of fields) {if(typeof value!=='string')return;params.append(key,value);}
     url.search = params.toString(); // Native GET replaces, rather than appends, action query.
-    const intent = {url:url.href,kind:'form',method:'get',currentUrl:location.href};
-    if (C.decide(snapshot,intent) !== 'BRANCH') return;
+    const currentUrl = policyCurrentUrl(target);
+    const intent = {url:url.href,kind:'form',method:'get',currentUrl,target};
+    const workerMustResolveTop=mustAskWorker(target),decision=C.decide(snapshot,intent);
+    const onlyTopFragmentIsUncertain=workerMustResolveTop && decision!=='BRANCH' &&
+      C.decide({...snapshot,branchHashes:true},intent)==='BRANCH';
+    if (decision!=='BRANCH' && !onlyTopFragmentIsUncertain) return;
     cancel(event);void send(intent,form,button);
   }
   function receive(message,_sender,respond) {
     if (_sender?.id && _sender.id!==chrome.runtime.id) return false;
-    if (message?.type==='ANCHOR_STATE') {const ok=acceptSnapshot(message.snapshot);respond({ok,version,guardId,revision:snapshot?.revision});}
+    if (message?.type==='ANCHOR_STATE') {
+      let ok=acceptSnapshot(message.snapshot);
+      if (!ok && message.guardId===guardId && message.resetFromRevision===snapshot?.revision &&
+          typeof message.snapshot?.documentId==='string' &&
+          (!documentId || message.snapshot.documentId===documentId) &&
+          Number.isInteger(message.snapshot?.revision) && message.snapshot.revision<snapshot.revision) {
+        ok=acceptSnapshot(message.snapshot,true);
+      }
+      respond({ok,version,guardId,revision:snapshot?.revision});
+    }
     if (message?.type==='ANCHOR_PING') respond({ok:true,version,guardId,revision:snapshot?.revision});
   }
   function dispose() {

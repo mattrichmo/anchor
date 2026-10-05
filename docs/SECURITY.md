@@ -11,10 +11,11 @@ Link branching and small protected workspaces; not a kiosk, read-only mode, sand
 - HTTP/HTTPS URL validation; no embedded URL credentials or privileged schemes in saved anchor URLs. Conservative Chrome Web Store exclusions.
 - Strict workspace schema, bounded sizes, reserved prototype-like IDs rejected, unknown import fields discarded, distinct live-tab adoption enforced. Import validates before releasing live bindings.
 - UI uses textContent/DOM creation for user/site strings; no HTML interpretation of imported labels.
-- Local/temporary storage only, access restrictions established in state module, no cookies/history/debugger/capture permissions.
+- Local/temporary storage only, access restrictions established in state module, no cookies/history/debugger/capture permissions. Saved tab policies and runtime ownership are validated against live tabs/windows on worker startup; invalid long pauses are discarded, conflicting workspace window claims are released, and saved readiness is re-established against the current document.
+- Extension UI uses restrictive local asset CSP with `default-src 'none'`, `connect-src 'none'` and `form-action 'none'`. Inline styling remains allowed for layout previews; scripts must be local assets.
 - Bounded per-gesture journal, per-destination creation lanes, serialized UI mutations and session writes. Unknown results do not trigger blind creates or native source replay.
 - Native tab relocation moves the original browser tab instead of closing/recreating it from its URL. No POST body replay. Auth-like/privileged/unknown paths have conservative exceptions.
-- Revisioned document-specific guard acknowledgement; no green readiness solely from saved settings. Older snapshots/other documents rejected. Known protected disconnected clicks show a notice rather than navigating as fallback.
+- Revisioned document-specific guard acknowledgement; no green readiness solely from saved settings. Older snapshots/other documents rejected. A lost session revision can be reset only with a current document response naming the exact live guard and revision. Known protected disconnected clicks show a notice rather than navigating as fallback.
 - Pending operations visible for owner acknowledgement after inspecting open windows. Manual acknowledgement does not prove an earlier create failed; retry may duplicate a previously completed-but-unconfirmed action.
 - Window bounds validated before mutation; only selected/bound anchor windows arranged; no forced repeated repositioning, window resurrection or unsaved-state restoration claims.
 

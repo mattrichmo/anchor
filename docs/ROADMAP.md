@@ -2,7 +2,7 @@
 
 ## Implemented in this package
 
-Separate browsing/window routing, local saved workspaces, real-window layouts, native-tab relocation with exceptions, pause/release, return-to-source, optional display discovery and protection-readiness hardening.
+Separate browsing/window routing, local saved workspaces, real-window layouts, native-tab relocation with exceptions, pause/release, return-to-source, optional display discovery and protection-readiness hardening. The October hardening pass adds iframe target handling, workspace mutation isolation, identity-aware binding cleanup, move ownership checks, pause preservation, navigation generation checks, validated session restoration, and restrictive UI CSP. See [hardening review](HARDENING-REVIEW.md) for evidence and remaining acceptance work.
 
 ## Core product gap: navigation coverage
 

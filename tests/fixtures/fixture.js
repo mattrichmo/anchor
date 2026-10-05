@@ -1,4 +1,5 @@
 window.fixtureEvents=[];
+window.fixtureDocumentIdentity=crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 document.addEventListener('click',e=>{
  const a=e.target.closest?.('a');if(a)window.fixtureEvents.push({id:a.id,trusted:e.isTrusted});
 });

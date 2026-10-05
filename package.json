@@ -17,6 +17,6 @@
     "demo": "node tests/fixtures/server.mjs",
     "test:e2e": "python tests/e2e/run.py",
     "package": "npm run check && python scripts/package.py",
-    "test:ui": "python tests/ui/run.py && python tests/ui/workspaces.py"
+    "test:ui": "python tests/ui/run.py && python tests/ui/workspaces.py && python tests/ui/security.py"
   }
 }

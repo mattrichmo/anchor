@@ -1,8 +1,27 @@
 # Anchor 2.0.0 — build and acceptance report
 
-## 5 October 2026 — navigation and experience review
+## 5 October 2026 — hardening implementation
 
-The local checkout was reviewed against GitHub main at `df81dfc`. The current changes are local and uncommitted; no public release is claimed.
+H1–H9 from the [independent hardening review](HARDENING-REVIEW.md) are implemented. The follow-up also validates session tab/runtime records, reconciles live ownership on worker startup, bounds restored pause deadlines, repairs lost-revision guard handshakes, rejects conflicting reserved workspace claims, and preflights every selected page before adoption. The local extension UI now blocks network connections and native form submissions through CSP while preserving local asset rendering and JSON exports.
+
+| Check | Result |
+| --- | --- |
+| Policy, schema/layout, navigation worker, workspace worker, session restoration | 247 passed, 0 failed (93 + 53 + 38 + 57 + 6) |
+| Rendered popup/settings/navigation guard | 54 passed, 0 failed |
+| Rendered workspace editor | 20 passed, 0 failed |
+| Chromium shipped-CSP enforcement and local Blob export | 4 passed, 0 failed |
+| `npm run check` — unit runner, generated extension, manifest/assets/JS validation | Passed |
+| Installed extension on Chromium 151.0.7922.173 (Linux) | NOT RUN: browser launched, no extension service worker within 30 seconds; exit 2, zero cases |
+
+The Node suites execute actual modules under mocked Chrome APIs. Rendered tests execute the actual UI and guard scripts using explicit API fixtures, about:blank documents, and synthetic origins fulfilled locally by Playwright for cross-origin iframe and effective-form-property checks. No external site requests or managed policy changes were used. This establishes the regression paths, not installed-extension privileges, browser event timing, OS window behavior, or safety of real dashboards. The installed attempt is recorded in [browser-test-results.json](browser-test-results.json); no managed policy was changed.
+
+This run used Node v24.19.0, Python 3.12.14, and Chromium 151.0.7922.173 on Linux.
+
+New cases cover top-directed iframe fragments, direct and nested `_parent` targets, native unprotected frame interactions, empty/invalid/absent submitter overrides, same-URL pending recovery, exact guard revision reset, delayed Save/Open identity, replacement anchor bindings, definite move failure, pause preservation, malformed runtime restoration, shared-window ownership conflicts, and no-partial-adoption preflight.
+
+## Earlier 5 October 2026 — navigation and experience review
+
+The local checkout was reviewed against GitHub main at `df81dfc`. This section records the earlier review baseline; it is superseded by the hardening results above. No public store release is claimed.
 
 | Check | Result |
 | --- | --- |

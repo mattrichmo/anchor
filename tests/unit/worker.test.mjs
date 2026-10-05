@@ -11,7 +11,7 @@ function storage(name){return {
 }}
 const origin='https://dashboard.example.com';
 let openTabs=[{id:1,url:origin+'/',title:'Dashboard',pinned:true,index:0,windowId:1,active:true}];
-let created=[],createFailure=false,nextId=10,frameDocument='doc-1',frameLifecycle='active',afterCreate=null;
+let created=[],createFailure=false,nextId=10,frameDocument='doc-1',frameLifecycle='active',frameParentId=0,afterCreate=null;
 const id='abcdefghijklmnopabcdefghijklmnop';
 globalThis.chrome={
  runtime:{id,getURL:path=>`chrome-extension://${id}/${path}`,getManifest:()=>({version:'1.0.0'}),onMessage:event(),onInstalled:event(),onStartup:event()},
@@ -27,7 +27,7 @@ globalThis.chrome={
  alarms:{create:async()=>{},clear:async()=>true,onAlarm:event()},
  contextMenus:{removeAll:async()=>{},create:()=>{},onClicked:event()},
  commands:{onCommand:event()},scripting:{executeScript:async()=>[]},
- webNavigation:{getFrame:async()=>({documentId:frameDocument,documentLifecycle:frameLifecycle}),onBeforeNavigate:event(),onCommitted:event(),onHistoryStateUpdated:event(),onReferenceFragmentUpdated:event()}
+ webNavigation:{getFrame:async()=>({documentId:frameDocument,documentLifecycle:frameLifecycle,parentFrameId:frameParentId}),onBeforeNavigate:event(),onCommitted:event(),onHistoryStateUpdated:event(),onReferenceFragmentUpdated:event()}
 };
 await import('../../src/background/service-worker.js');
 const state=await import('../../src/background/state.js');await state.ready;
@@ -36,7 +36,7 @@ const uiSender={id,url:chrome.runtime.getURL('ui/options.html')};
 const contentSender=()=>({id,tab:clone(openTabs[0]),url:origin+'/',documentId:'doc-1',frameId:0});
 function send(message,sender=uiSender){return new Promise((resolve,reject)=>{const claimed=listener(message,sender,resolve);if(!claimed)resolve({ignored:true})})}
 async function reset(){
- openTabs=[{id:1,url:origin+'/',title:'Dashboard',pinned:true,index:0,windowId:1,active:true}];created=[];createFailure=false;frameDocument='doc-1';frameLifecycle='active';afterCreate=null;
+ openTabs=[{id:1,url:origin+'/',title:'Dashboard',pinned:true,index:0,windowId:1,active:true}];created=[];createFailure=false;frameDocument='doc-1';frameLifecycle='active';frameParentId=0;afterCreate=null;
  await send({type:'UI_RESET'});
 }
 const intent=(suffix='a')=>({type:'ANCHOR_OPEN_LINK',kind:'link',url:origin+'/detail',intentId:'gesture-id-0000000'+suffix});
@@ -50,6 +50,28 @@ test('worker: uncertain creation is not automatically retried',async()=>{await r
 test('worker: later deliberate retry with a new gesture is permitted',async()=>{await reset();createFailure=true;await send(intent('a'),contentSender());createFailure=false;const r=await send(intent('b'),contentSender());assert.equal(r.status,'opened');});
 test('worker: replaced document cannot open a tab',async()=>{await reset();frameDocument='doc-2';const r=await send(intent(),contentSender());assert.equal(r.status,'stale');assert.equal(created.length,0);});
 test('worker: cached/prerendered document cannot open a tab',async()=>{await reset();frameLifecycle='cached';const r=await send(intent(),contentSender());assert.equal(r.status,'stale');assert.equal(created.length,0);});
+test('worker: top-target iframe fragment uses the live top-tab URL',async()=>{
+ await reset();openTabs[0].url=origin+'/dashboard';frameDocument='doc-frame';frameParentId=0;
+ const sender={...contentSender(),url:origin+'/frame',documentId:'doc-frame',frameId:3};
+ const r=await send({...intent(),url:origin+'/frame#section',target:'_top'},sender);
+ assert.equal(r.status,'opened');assert.equal(created[0].url,origin+'/frame#section');
+});
+test('worker: matching top-document fragment remains native for a top target',async()=>{
+ await reset();openTabs[0].url=origin+'/frame';frameDocument='doc-frame';frameParentId=0;
+ const sender={...contentSender(),url:origin+'/frame',documentId:'doc-frame',frameId:3};
+ const r=await send({...intent(),url:origin+'/frame#section',target:'_top'},sender);
+ assert.equal(r.status,'native');assert.equal(created.length,0);
+});
+test('worker: direct-child _parent uses top URL while nested _parent stays frame-local',async()=>{
+ await reset();openTabs[0].url=origin+'/dashboard';frameDocument='doc-frame';frameParentId=0;
+ const direct={...contentSender(),url:origin+'/frame',documentId:'doc-frame',frameId:3};
+ const escaped=await send({...intent('p'),url:origin+'/frame#section',target:'_parent'},direct);
+ assert.equal(escaped.status,'opened');assert.equal(created.length,1);
+ await reset();openTabs[0].url=origin+'/dashboard';frameDocument='doc-frame';frameParentId=7;
+ const nested={...contentSender(),url:origin+'/frame',documentId:'doc-frame',frameId:8};
+ const local=await send({...intent('q'),url:origin+'/frame#section',target:'_parent'},nested);
+ assert.equal(local.status,'native');assert.equal(created.length,0);
+});
 test('worker: missing document identity rejected',async()=>{await reset();const sender=contentSender();delete sender.documentId;const r=await send(intent(),sender);assert.equal(r.ok,false);assert.equal(created.length,0);});
 test('worker: wrong extension identity rejected',async()=>{await reset();const r=await send(intent(),{...contentSender(),id:'other'});assert.equal(r.ok,false);});
 test('worker: arbitrary page cannot invoke privileged UI action',async()=>{await reset();const r=await send({type:'UI_SETTINGS',patch:{enabled:false}},contentSender());assert.equal(r.ignored,true);assert.equal(state.settings.enabled,true);});
@@ -99,6 +121,21 @@ test('worker: pending second navigation is not replaced by recovery',async()=>{
  await navigation('onCommitted',details);
  assert.equal(created.length,1);assert.equal(openTabs[0].url,details.url);
  assert.equal(openTabs[0].pendingUrl,origin+'/newer');
+});
+test('worker: any pending URL prevents recovery rollback, including the same URL',async()=>{
+ const details=await prepareRecovery();afterCreate=()=>{openTabs[0].pendingUrl=details.url;};
+ await navigation('onCommitted',details);
+ assert.equal(created.length,1);assert.equal(openTabs[0].url,details.url);
+ assert.equal(openTabs[0].pendingUrl,details.url);
+});
+test('worker: newer pending navigation to the same URL is not rolled back',async()=>{
+ const details=await prepareRecovery();afterCreate=()=>{
+  openTabs[0].pendingUrl=details.url;
+  chrome.webNavigation.onBeforeNavigate.listeners[0]({tabId:1,frameId:0,url:details.url});
+ };
+ await navigation('onCommitted',details);
+ assert.equal(created.length,1);assert.equal(openTabs[0].url,details.url);
+ assert.equal(openTabs[0].pendingUrl,details.url);
 });
 test('worker: stale same-document event cannot overwrite current URL',async()=>{
  await reset();openTabs[0].url=origin+'/latest';

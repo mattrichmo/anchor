@@ -24,7 +24,10 @@ window.chrome={runtime:{id:'fixture-id',getManifest:()=>({version:'2.0.0'}),getU
  if(m.type==='ANCHOR_HELLO')return {ok:true,snapshot:snapshot()};
  if(m.type==='ANCHOR_OPEN_LINK'){
   if(f.fail)throw new Error('Simulated disconnected worker');
-  if(!snapshot().active)return {ok:true,status:'native',snapshot:snapshot()};
+  const target=m.target||'';
+  const reachesTop=target==='_top'||(target==='_parent'&&(window===window.top||window.parent===window.top))||((target===''||target==='_self')&&window===window.top);
+  const currentUrl=reachesTop?f.tab.url:(m.currentUrl||f.tab.url);
+  if(AnchorCore.decide(snapshot(),{url:m.url,currentUrl,kind:m.kind,method:m.method})!=='BRANCH')return {ok:true,status:'native',snapshot:snapshot()};
   f.opened.push(m);return {ok:true,status:'opened',snapshot:snapshot()};
  }
  if(m.type==='UI_SETTINGS'){f.settings=AnchorCore.validateSettings({...f.settings,...m.patch});broadcast();}
@@ -135,11 +138,15 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
 <a id="normal" href="https://dashboard.example.com/details"><span id="nested">Details</span></a>
 <a id="external" href="https://other.example.com/details">Other origin</a>
 <a id="blank" href="https://other.example.com/" target="_blank">New tab</a>
+<a id="top-target" href="#section" target="_top">Top fragment</a>
+<a id="parent-target" href="https://other.example.com/parent" target="_parent">Parent page</a>
 <a id="download" href="https://dashboard.example.com/file" download>Download</a>
 <a id="mail" href="mailto:hello@example.com">Email</a>
 <a id="js" href="javascript:void(0)">Action</a><div id="shadow"></div>
 <form id="get" action="https://dashboard.example.com/search?old=x" method="get"><input name="q" value="hello world"><button id="get-submit" name="from" value="dashboard">Search</button></form>
+<form id="parent-get" action="https://other.example.com/parent-search" method="get" target="_parent"><input name="q" value="parent"><button id="parent-get-submit">Search parent</button></form>
 <form id="post" action="https://dashboard.example.com/submit" method="post"><button id="post-submit">Send</button></form>
+<form id="parent-post" action="https://dashboard.example.com/submit" method="post" target="_parent"><button id="parent-post-submit">Send parent</button></form>
 <form id="password" action="https://dashboard.example.com/search" method="get"><input name="p" type="password" value="fixture"><button id="pass-submit">Sign in</button></form>
 '''+extra+'</body></html>')
         p.add_script_tag(content=core);p.add_script_tag(content=mock)
@@ -150,6 +157,31 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
         p.wait_for_timeout(40)
         return p
     def count(p):return p.evaluate('__fixture.opened.length')
+    def routed_frame_guard(top_url,frame_url,frame_html,frame_documents=None,target_url=None,patch=None,unknown=False):
+        p=context.new_page();frame_documents=frame_documents or {};target_url=target_url or frame_url
+        top_html=f'<!doctype html><html><body><iframe src="{frame_url}"></iframe></body></html>'
+        def serve(route):
+            body=top_html if route.request.frame==p.main_frame else frame_documents.get(route.request.url,frame_html)
+            route.fulfill(status=200,content_type='text/html',body=body)
+        p.route('**/*',serve);p.goto(top_url);p.wait_for_timeout(80)
+        frame=next(f for f in p.frames if f.parent_frame is not None and f.url==target_url)
+        frame.add_script_tag(content=core);frame.add_script_tag(content=mock)
+        frame.evaluate('(url)=>{__fixture.tab.url=url}',top_url)
+        if patch:frame.evaluate('(patch)=>Object.assign(__fixture.settings,patch)',patch)
+        if unknown:frame.evaluate("() => {const send=chrome.runtime.sendMessage;chrome.runtime.sendMessage=m=>m.type==='ANCHOR_HELLO'?new Promise(()=>{}):send(m)}")
+        frame.add_script_tag(content=(ROOT/'src/content/guard.js').read_text())
+        frame.add_script_tag(content='''for(const type of ['click','auxclick','submit'])document.addEventListener(type,e=>{if(type==='submit'||e.composedPath().some(n=>n.tagName==='A')){__fixture.native.push({type,trusted:e.isTrusted,tag:e.target.tagName});e.preventDefault()}});''')
+        if not unknown:frame.wait_for_timeout(40)
+        return p,frame
+    def routed_guard_page(url,html,patch=None):
+        p=context.new_page()
+        p.route('**/*',lambda route:route.fulfill(status=200,content_type='text/html',body=html))
+        p.goto(url);p.add_script_tag(content=core);p.add_script_tag(content=mock)
+        p.evaluate('(url)=>{__fixture.tab.url=url}',url)
+        if patch:p.evaluate('(patch)=>Object.assign(__fixture.settings,patch)',patch)
+        p.add_script_tag(content=(ROOT/'src/content/guard.js').read_text())
+        p.add_script_tag(content='''for(const type of ['click','auxclick','submit'])document.addEventListener(type,e=>{if(type==='submit'||e.composedPath().some(n=>n.tagName==='A')){__fixture.native.push({type,trusted:e.isTrusted,tag:e.target.tagName});e.preventDefault()}});''')
+        p.wait_for_timeout(40);return p
     def simple_guard():
         p=guard();p.locator('#nested').click();p.wait_for_function('__fixture.opened.length===1');assert p.evaluate('__fixture.native.length')==0;p.close()
     test('DOM guard intercepts trusted nested link before page handlers',simple_guard)
@@ -167,6 +199,63 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
         def excluded(link=link):
             p=guard();p.locator('#'+link).click();assert count(p)==0;p.close()
         test(f'DOM native exclusion: {link}',excluded)
+    def top_document_parent_link():
+        p=guard();p.locator('#parent-target').click();p.wait_for_function('__fixture.opened.length===1')
+        assert p.evaluate('__fixture.opened[0].target')=='_parent';p.close()
+    test('DOM top-document _parent link is handled as a top target',top_document_parent_link)
+    def top_document_parent_form():
+        p=guard(patch={'protectGetForms':True});p.locator('#parent-get-submit').click();p.wait_for_function('__fixture.opened.length===1')
+        assert p.evaluate('__fixture.opened[0].kind')=='form';assert p.evaluate('__fixture.opened[0].target')=='_parent';p.close()
+    test('DOM top-document _parent GET form is protected',top_document_parent_form)
+    def top_document_parent_post():
+        p=guard(patch={'protectGetForms':True});p.locator('#parent-post-submit').click();assert count(p)==0
+        assert p.evaluate('__fixture.native.filter(x=>x.type==="submit").length')==1;p.close()
+    test('DOM top-document _parent POST form remains native',top_document_parent_post)
+    def iframe_top_fragment():
+        top='https://dashboard.example.com/dashboard';frame='https://frame.example.com/frame'
+        p,f=routed_frame_guard(top,frame,'<!doctype html><a id="fragment" target="_top" href="#section">Section</a>')
+        p.frame_locator('iframe').locator('#fragment').click();f.wait_for_function('__fixture.opened.length===1')
+        message=f.evaluate('__fixture.opened[0]');assert message['url']==frame+'#section';assert message['target']=='_top';assert message['currentUrl']==top;p.close()
+    test('Cross-origin iframe _top fragment resolves against frame but is checked against top URL',iframe_top_fragment)
+    def iframe_top_fragment_unknown():
+        top='https://dashboard.example.com/dashboard';frame='https://frame.example.com/frame'
+        p,f=routed_frame_guard(top,frame,'<!doctype html><a id="fragment" target="_top" href="#section">Section</a>',unknown=True)
+        p.frame_locator('iframe').locator('#fragment').click();f.wait_for_function('__fixture.opened.length===1')
+        message=f.evaluate('__fixture.opened[0]');assert message['url']==frame+'#section';assert message['target']=='_top';p.close()
+    test('Cross-origin iframe _top fragment is checked before the first snapshot arrives',iframe_top_fragment_unknown)
+    def iframe_unprotected_stays_native():
+        top='https://dashboard.example.com/dashboard';frame='https://frame.example.com/frame'
+        p,f=routed_frame_guard(top,frame,'<!doctype html><a id="link" target="_top" href="https://other.example.com/page">Other</a>')
+        f.evaluate('__fixture.tab.pinned=false;broadcast()');p.frame_locator('iframe').locator('#link').click()
+        assert f.evaluate('__fixture.opened.length')==0;assert f.evaluate('__fixture.native[0].trusted') is True;p.close()
+    test('Known-unprotected iframe top target stays a trusted native click',iframe_unprotected_stays_native)
+    def iframe_matching_fragment():
+        url='https://dashboard.example.com/frame'
+        p,f=routed_frame_guard(url,url,'<!doctype html><a id="fragment" target="_top" href="#section">Section</a>')
+        p.frame_locator('iframe').locator('#fragment').click();assert f.evaluate('__fixture.opened.length')==0
+        assert not f.evaluate('__fixture.messages.some(m=>m.type==="ANCHOR_OPEN_LINK")')
+        assert f.evaluate('__fixture.native[0].trusted') is True;p.close()
+    test('Readable matching top document keeps an iframe _top fragment natively trusted',iframe_matching_fragment)
+    def iframe_parent_targets():
+        top='https://dashboard.example.com/dashboard';frame='https://frame.example.com/frame'
+        html='''<!doctype html><a id="parent-link" target="_parent" href="https://other.example.com/parent">Parent</a>
+<form action="https://other.example.com/search" method="get" target="_parent"><input name="q" value="parent"><button id="parent-get">Search</button></form>
+<form action="https://dashboard.example.com/post" method="post" target="_parent"><button id="parent-post">Send</button></form>'''
+        p,f=routed_frame_guard(top,frame,html);p.frame_locator('iframe').locator('#parent-link').click();f.wait_for_function('__fixture.opened.length===1')
+        assert f.evaluate('__fixture.opened[0].target')=='_parent';p.close()
+        p,f=routed_frame_guard(top,frame,html,patch={'protectGetForms':True});p.frame_locator('iframe').locator('#parent-get').click();f.wait_for_function('__fixture.opened.length===1')
+        assert f.evaluate('__fixture.opened[0].kind')=='form';assert f.evaluate('__fixture.opened[0].target')=='_parent';p.close()
+        p,f=routed_frame_guard(top,frame,html,patch={'protectGetForms':True});p.frame_locator('iframe').locator('#parent-post').click()
+        assert f.evaluate('__fixture.opened.length')==0;assert f.evaluate('__fixture.native.filter(x=>x.type==="submit").length')==1;p.close()
+    test('Direct-child iframe _parent link and GET form reach top; POST remains native',iframe_parent_targets)
+    def nested_parent_stays_local():
+        top='https://dashboard.example.com/dashboard';frame='https://frame.example.com/frame';nested='https://nested.example.com/nested'
+        outer='<!doctype html><iframe src="'+nested+'"></iframe>'
+        inner='<!doctype html><a id="parent" target="_parent" href="#section">Parent fragment</a>'
+        p,f=routed_frame_guard(top,frame,outer,frame_documents={nested:inner},target_url=nested)
+        p.frame_locator('iframe').frame_locator('iframe').locator('#parent').click()
+        assert f.evaluate('__fixture.opened.length')==0;assert f.evaluate('__fixture.native.length')==1;p.close()
+    test('Nested iframe _parent navigation stays in its immediate parent context',nested_parent_stays_local)
     def same_origin():
         p=guard(patch={'mode':'same-origin'});p.locator('#normal').click();assert count(p)==0;assert p.evaluate('__fixture.native[0].trusted');p.locator('#external').click();p.wait_for_function('__fixture.opened.length===1');p.close()
     test('DOM same-origin policy distinguishes internal and external links',same_origin)
@@ -179,6 +268,19 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
     def form_get():
         p=guard(patch={'protectGetForms':True});p.locator('#get-submit').click();p.wait_for_function('__fixture.opened.length===1');dest=p.evaluate('__fixture.opened[0].url');assert 'q=hello+world' in dest;assert 'from=dashboard' in dest;assert 'old=x' not in dest;p.close()
     test('DOM GET-form serialization preserves submitter and replaces action query',form_get)
+    def form_override_semantics():
+        url='https://dashboard.example.com/form'
+        html='''<!doctype html><form method="post" action="/parent"><input name="q" value="empty"><button id="empty" name="submit" value="yes" formmethod="" formaction="">Empty overrides</button></form>
+<form method="post" action="/parent"><input name="q" value="invalid"><button id="invalid" formmethod="invalid" formaction="/override">Invalid method</button></form>
+<form method="get" action="/no-button"><input id="no-button" name="q" value="plain"></form>'''
+        p=routed_guard_page(url,html,patch={'protectGetForms':True})
+        p.locator('#empty').click();p.wait_for_function('__fixture.opened.length===1')
+        empty=p.evaluate('__fixture.opened[0].url');assert empty.startswith(url+'?');assert 'parent' not in empty
+        p.locator('#invalid').click();p.wait_for_function('__fixture.opened.length===2')
+        invalid=p.evaluate('__fixture.opened[1].url');assert '/override?' in invalid
+        p.locator('#no-button').press('Enter');p.wait_for_function('__fixture.opened.length===3')
+        no_submitter=p.evaluate('__fixture.opened[2].url');assert '/no-button?' in no_submitter;p.close()
+    test('DOM form submit uses empty and invalid native overrides plus no-submitter GET',form_override_semantics)
     def form_post():
         p=guard(patch={'protectGetForms':True});p.locator('#post-submit').click();assert count(p)==0;assert p.evaluate('__fixture.native.filter(x=>x.type==="submit").length')==1;p.close()
     test('DOM POST submission is not intercepted or replayed',form_post)
@@ -211,6 +313,21 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
     def wrong_document():
         p=guard();p.evaluate("__fixture.listeners.forEach(fn=>fn({type:'ANCHOR_STATE',snapshot:{...snapshot(),active:false,revision:99,documentId:'other-document'}},{id:chrome.runtime.id},()=>{}))");p.locator('#normal').click();p.wait_for_function('__fixture.opened.length===1');p.close()
     test('DOM guard rejects a snapshot for another document',wrong_document)
+    def revision_reset_handshake():
+        p=guard();p.evaluate("__fixture.settings.mode='same-origin';broadcast()")
+        result=p.evaluate('''() => {
+          const current=snapshot(), lower={...current,active:false,revision:current.revision-1};
+          const deliver=message=>{let reply;__fixture.listeners.forEach(fn=>fn(message,{},value=>reply=value));return reply;};
+          const wrongGuard=deliver({type:'ANCHOR_STATE',snapshot:lower,guardId:'wrong-guard',resetFromRevision:current.revision});
+          const wrongRevision=deliver({type:'ANCHOR_STATE',snapshot:lower,guardId:wrongGuard.guardId,resetFromRevision:current.revision-1});
+          const wrongDocument=deliver({type:'ANCHOR_STATE',snapshot:{...lower,documentId:'other-document'},guardId:wrongGuard.guardId,resetFromRevision:current.revision});
+          const accepted=deliver({type:'ANCHOR_STATE',snapshot:lower,guardId:wrongGuard.guardId,resetFromRevision:current.revision});
+          return {current:current.revision,wrongGuard,wrongRevision,wrongDocument,accepted};
+        }''')
+        assert result['current']>1;assert result['wrongGuard']['ok'] is False;assert result['wrongRevision']['ok'] is False
+        assert result['wrongDocument']['ok'] is False;assert result['accepted']['ok'] is True
+        assert result['accepted']['revision']==result['current']-1;p.close()
+    test('DOM guard accepts a lower revision only for its exact same-document reset handshake',revision_reset_handshake)
     def destination_control():
         p=ui('popup');p.locator('#destination').select_option('new-window');assert p.evaluate('__fixture.record.destination')=='new-window';p.locator('#destination').select_option('browsing-window');assert p.evaluate('__fixture.record.destination')=='browsing-window';p.close()
     test('Popup routes destination preferences through tab-scoped messages',destination_control)
@@ -224,7 +341,7 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
     p=context.new_page();html=(ROOT/'tests/fixtures/index.html').read_text();html=re.sub(r'<script\b[^>]*>.*?</script>','',html,flags=re.S);html=re.sub(r'<link\b[^>]*>','',html);html=re.sub(r'<iframe.*?</iframe>','',html,flags=re.S);html=html.replace('<body>','<body class="hide-tests">');html=html.replace('</head>','<style>'+(ROOT/'tests/fixtures/fixture.css').read_text()+'</style></head>');p.set_content(html);p.screenshot(path=str(OUT/'source-dashboard.png'));p.close()
     version=b.version
     b.close()
-report={'version':'2.0.0','date':datetime.now(ZoneInfo('America/Regina')).date().isoformat(),'browser':'Chromium '+version,'method':'Actual shipped DOM/UI scripts, rendered in about:blank with explicitly mocked Chrome extension APIs. NOT installed-extension E2E. No policy changes or blocked URL navigation.', 'tests':results,'passed':sum(r['status']=='PASS' for r in results),'failed':sum(r['status']=='FAIL' for r in results)}
+report={'version':'2.0.0','date':datetime.now(ZoneInfo('America/Regina')).date().isoformat(),'browser':'Chromium '+version,'method':'Actual shipped DOM/UI scripts with mocked Chrome APIs. General UI fixtures use about:blank; iframe and form navigation cases use synthetic HTTP origins served entirely through local Playwright routes. NOT installed-extension E2E. No policy changes or external requests.', 'tests':results,'passed':sum(r['status']=='PASS' for r in results),'failed':sum(r['status']=='FAIL' for r in results)}
 (ROOT/'docs/ui-dom-test-results.json').write_text(json.dumps(report,indent=2)+'\n')
 print(f"\n{report['passed']} passed; {report['failed']} failed",flush=True)
 sys.exit(1 if report['failed'] else 0)

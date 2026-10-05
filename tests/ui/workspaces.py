@@ -31,10 +31,14 @@ window.__fixture.windows=[{id:1,reserved:false,focused:true,tabs:[
 ]},{id:2,reserved:false,focused:false,tabs:[{id:5,url:'https://browse.example.com/',title:'My browsing window',windowId:2}]}];
 window.__fixture.displays=[];
 window.__fixture.replies=[];
+window.__fixture.holds={};window.__fixture.pending={};
+window.__holdNext=type=>{let release;const promise=new Promise(resolve=>release=resolve);__fixture.holds[type]={promise,release};};
+window.__releaseHeld=type=>{const held=__fixture.pending[type];if(held){delete __fixture.pending[type];held.release();}};
 window.__workspaceState=()=>({ok:true,library:structuredClone(__fixture.library),runtime:structuredClone(__fixture.runtime),windows:structuredClone(__fixture.windows),displays:structuredClone(__fixture.displays)});
 const baseSend=chrome.runtime.sendMessage;
 chrome.runtime.sendMessage=async m=>{
- const f=__fixture;if(!['UI_STATE','UI_TAB'].includes(m.type))f.messages.push(structuredClone(m));
+ const f=__fixture;m=structuredClone(m);if(!['UI_STATE','UI_TAB'].includes(m.type))f.messages.push(structuredClone(m));
+ const held=f.holds[m.type];if(held){delete f.holds[m.type];f.pending[m.type]=held;await held.promise;delete f.pending[m.type];}
  try{
  if(m.type==='UI_WORKSPACE_STATE')return __workspaceState();
  if(m.type==='UI_SAVE_WORKSPACE'){const w=AnchorWorkspace.validateWorkspace(m.workspace);f.library.items=f.library.items.filter(v=>v.id!==w.id);f.library.items.push(w);return __workspaceState();}
@@ -73,6 +77,13 @@ with tempfile.TemporaryDirectory(prefix='anchor-workspace-ui-') as home,sync_pla
         p.locator('#workspace-name').fill('Operations desk')
         for i in range(1,n+1):p.locator('#open-tab').select_option(str(i));p.locator('#add-open-tab').click()
     def save(p):p.locator('#save-workspace').click();p.wait_for_function('__fixture.library.items.length===1')
+    def two_workspaces(p):
+        p.locator('#workspace-name').fill('Alpha desk');p.locator('#open-tab').select_option('1');p.locator('#add-open-tab').click();p.get_by_label('Page 1 label',exact=True).fill('Alpha page');save(p)
+        alpha=p.evaluate('__fixture.library.items[0].id')
+        p.locator('#new-workspace').click();p.locator('#workspace-name').fill('Beta desk');p.locator('#open-tab').select_option('2');p.locator('#add-open-tab').click();p.get_by_label('Page 1 label',exact=True).fill('Beta page');p.locator('#save-workspace').click();p.wait_for_function('__fixture.library.items.length===2')
+        p.locator('#workspace-list button').nth(0).click();p.get_by_role('button',name='Remove page 1',exact=True).click()
+        p.locator('#open-tab').select_option('1');p.locator('#add-open-tab').click();p.get_by_label('Page 1 label',exact=True).fill('A live page');p.locator('#browsing-window').select_option('2')
+        return alpha
     def empty():
         p=page();assert p.locator('h1').inner_text()=='Your workspace, held.';assert p.locator('#page-count').inner_text()=='0 / 4 pages';assert p.locator('#arrange-workspace').is_disabled();p.close()
     test('Workspace empty state renders with clear limits and no auto-open',empty)
@@ -104,6 +115,53 @@ with tempfile.TemporaryDirectory(prefix='anchor-workspace-ui-') as home,sync_pla
     def open_pages():
         p=page();add(p);p.locator('#open-workspace').click();p.wait_for_function('document.getElementById("live-status").textContent==="4 pages open"');assert p.locator('#live-status').text_content()=='4 pages open';assert p.locator('#live-pages .live-page').count()==4;m=p.evaluate('__fixture.messages.findLast(m=>m.type==="UI_OPEN_WORKSPACE")');assert sorted(m['adoptIds'].values())==[1,2,3,4];assert not m['arrangeOnly'];p.locator('#arrange-workspace').click();p.wait_for_function('__fixture.messages.findLast(m=>m.type==="UI_OPEN_WORKSPACE").arrangeOnly===true');p.close()
     test('Open and arrange-only requests carry stable identities and distinct reopen intent',open_pages)
+    def delayed_open_identity():
+        p=page();alpha=two_workspaces(p);p.evaluate("__fixture.messages.splice(0);__holdNext('UI_SAVE_WORKSPACE')")
+        p.locator('#open-workspace').click();p.wait_for_function('__fixture.pending.UI_SAVE_WORKSPACE!==undefined')
+        assert p.locator('.workspace-shell').evaluate('(el)=>el.inert')
+        save_message=p.evaluate('__fixture.messages.find(m=>m.type==="UI_SAVE_WORKSPACE")')
+        assert save_message['workspace']['id']==alpha and save_message['workspace']['anchors'][0]['label']=='A live page'
+        p.evaluate('''()=>{
+          const fire=(selector,type='click')=>document.querySelector(selector).dispatchEvent(new Event(type,{bubbles:true,cancelable:true}));
+          fire('#workspace-list button:nth-child(2)');fire('#new-workspace');
+          const label=document.querySelector('[aria-label="Page 1 label"]');label.value='Edit during save';label.dispatchEvent(new Event('input',{bubbles:true}));
+          fire('#refresh');fire('#delete-workspace');fire('#open-workspace');
+        }''')
+        assert p.locator('#workspace-name').input_value()=='Alpha desk'
+        assert p.locator('#workspace-list button').nth(0).get_attribute('aria-current')=='true'
+        assert p.evaluate("__fixture.messages.filter(m=>m.type!=='UI_SAVE_WORKSPACE').length")==0
+        p.evaluate("__releaseHeld('UI_SAVE_WORKSPACE')")
+        p.wait_for_function('__fixture.messages.some(m=>m.type==="UI_OPEN_WORKSPACE")')
+        p.wait_for_function("document.getElementById('status').textContent.startsWith('Workspace open.')")
+        messages=p.evaluate('__fixture.messages')
+        opened=next(m for m in messages if m['type']=='UI_OPEN_WORKSPACE')
+        routed=next(m for m in messages if m['type']=='UI_SET_BROWSING_WINDOW')
+        assert opened['workspaceId']==alpha and list(opened['adoptIds'].values())==[1]
+        assert routed['workspaceId']==alpha and routed['windowId']==2
+        assert p.locator('#workspace-name').input_value()=='Alpha desk'
+        assert p.get_by_label('Page 1 label',exact=True).input_value()=='A live page'
+        assert p.evaluate('(id)=>__fixture.library.items.find(w=>w.id===id).anchors[0].label',alpha)=='A live page'
+        p.close()
+    test('Delayed Open stays with its captured workspace, live tabs, and browsing destination',delayed_open_identity)
+    def delayed_save_competing_actions():
+        p=page();add(p,1);save(p);p.evaluate("__fixture.messages.splice(0);__holdNext('UI_SAVE_WORKSPACE')")
+        p.locator('#save-workspace').click();p.wait_for_function('__fixture.pending.UI_SAVE_WORKSPACE!==undefined')
+        assert p.locator('.workspace-shell').evaluate('(el)=>el.inert')
+        p.on('dialog',lambda d:d.accept())
+        p.evaluate('''()=>{
+          const fire=(selector,type='click')=>document.querySelector(selector).dispatchEvent(new Event(type,{bubbles:true,cancelable:true}));
+          fire('#refresh');fire('#delete-workspace');fire('#open-workspace');
+          document.querySelector('#workspace-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+        }''')
+        p.locator('#import-workspaces').set_input_files({'name':'replacement.json','mimeType':'application/json','buffer':b'{"schemaVersion":1,"items":[]}'})
+        assert p.evaluate('__fixture.messages.length')==1
+        assert p.evaluate('__fixture.messages[0].type')=='UI_SAVE_WORKSPACE'
+        p.evaluate("__releaseHeld('UI_SAVE_WORKSPACE')")
+        p.wait_for_function("document.getElementById('save-note').textContent==='Saved locally.'")
+        assert p.evaluate('__fixture.messages.map(m=>m.type)')==['UI_SAVE_WORKSPACE']
+        assert p.locator('#workspace-list button').count()==1
+        p.close()
+    test('Delayed Save serializes refresh, import, delete, open, and repeat-save actions',delayed_save_competing_actions)
     def pause_release():
         p=page();add(p,1);p.locator('#open-workspace').click();p.locator('#live-controls').wait_for(state='visible');p.locator('#pause-workspace').click();assert p.locator('#pause-workspace').inner_text()=='Resume workspace';p.locator('#pause-workspace').click();p.on('dialog',lambda d:d.accept());p.locator('#release-workspace').click();assert p.locator('#live-controls').is_hidden();assert p.evaluate('__fixture.library.items.length')==1;p.close()
     test('Pause/resume and explicit release preserve the saved definition',pause_release)

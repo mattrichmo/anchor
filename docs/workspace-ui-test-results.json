@@ -41,6 +41,14 @@
       "status": "PASS"
     },
     {
+      "name": "Delayed Open stays with its captured workspace, live tabs, and browsing destination",
+      "status": "PASS"
+    },
+    {
+      "name": "Delayed Save serializes refresh, import, delete, open, and repeat-save actions",
+      "status": "PASS"
+    },
+    {
       "name": "Pause/resume and explicit release preserve the saved definition",
       "status": "PASS"
     },
@@ -77,6 +85,6 @@
       "status": "PASS"
     }
   ],
-  "passed": 18,
+  "passed": 20,
   "failed": 0
 }
