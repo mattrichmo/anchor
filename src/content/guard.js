@@ -106,8 +106,8 @@
     const form = event.target, button = event.submitter;
     if (!(form instanceof HTMLFormElement) || replaying.has(form)) return;
     const method = (button?.getAttribute('formmethod') || form.getAttribute('method') || 'get').toLowerCase();
-    if (method !== 'get' || form.querySelector('input[type=password],input[type=file]')) return;
-    const target = (button?.getAttribute('formtarget') || form.getAttribute('target') || '').toLowerCase();
+    if (method !== 'get' || Array.from(form.elements).some(field => field instanceof HTMLInputElement && ['password','file'].includes(field.type))) return;
+    const target = (button?.getAttribute('formtarget') ?? form.getAttribute('target') ?? document.querySelector('base[target]')?.getAttribute('target') ?? '').toLowerCase();
     if (target && !['_self','_top'].includes(target)) return;
     if (window !== window.top && target !== '_top') return;
     if (button?.getAttribute('type')?.toLowerCase() === 'image') return;

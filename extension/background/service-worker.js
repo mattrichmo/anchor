@@ -165,6 +165,7 @@ async function handleUI(message) {
           if(typeof message.foreground!=='boolean')throw new Error('Invalid focus preference.');
           if(record.workspaceId)throw new Error('Change workspace focus in Workspaces.');
           record.foreground=message.foreground;break;
+        case 'rearm-recovery': record.recoveryTripped = false; break;
         case 'home': record.homeUrl = tab.url; record.recoveryTripped = false; break;
         case 'mode':
           if (!C.MODES.includes(message.mode)) throw new Error('Unknown mode.');
@@ -278,10 +279,23 @@ chrome.webNavigation.onBeforeNavigate.addListener(details => {
     await persist(tab.id,record);
   })));
 });
+// Browser navigation continues while our storage/window operations await.
+// Never recover a document that has already been superseded, including a
+// second pending navigation that has not committed yet.
+async function recoveryDocument(details) {
+  const tab = await chrome.tabs.get(details.tabId);
+  const frame = await chrome.webNavigation.getFrame({tabId:details.tabId,frameId:0});
+  if (!details.documentId || frame?.documentId !== details.documentId ||
+      frame.documentLifecycle !== 'active' || tab.url !== details.url ||
+      (tab.pendingUrl && tab.pendingUrl !== details.url)) return null;
+  return tab;
+}
 chrome.webNavigation.onCommitted.addListener(details => {
   if (details.frameId !== 0) return;
   quiet(ready.then(() => withTab(details.tabId, async () => {
     const tab = await chrome.tabs.get(details.tabId), record = recordFor(tab);
+    const liveDocument = await recoveryDocument(details);
+    if (!liveDocument) return;
     const oldUrl = record.beforeUrl || record.currentUrl;
     const snapshot = C.makeSnapshot(settings,{...tab,url:oldUrl},record,Date.now());
     const mayRecover = snapshot.recovery && C.shouldRecover(details) && C.supported(oldUrl) &&
@@ -293,7 +307,8 @@ chrome.webNavigation.onCommitted.addListener(details => {
       record.recoveryTripped = true;
       await persist(tab.id,record);
       const outcome = await openBranch(tab,record,details.url,snapshot,`recovery:${details.documentId}`);
-      if (outcome.status === 'opened') await chrome.tabs.update(tab.id,{url:oldUrl});
+      if (outcome.status === 'opened' && await recoveryDocument(details))
+        await chrome.tabs.update(tab.id,{url:oldUrl});
     }
     await persist(tab.id,record);
     await publish(tab,record);
@@ -303,7 +318,10 @@ function observeSameDocument(details) {
   if (details.frameId !== 0) return;
   quiet(ready.then(() => withTab(details.tabId,async () => {
     const tab = await chrome.tabs.get(details.tabId), record = recordFor(tab);
+    const frame = await chrome.webNavigation.getFrame({tabId:details.tabId,frameId:0});
+    if (frame?.documentId !== details.documentId || frame.documentLifecycle !== 'active' || tab.url !== details.url) return;
     record.currentUrl = details.url;
+    delete record.beforeUrl;
     await persist(tab.id,record); await publish(tab,record);
   })));
 }

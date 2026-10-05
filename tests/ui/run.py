@@ -3,6 +3,8 @@ This does NOT install an extension and is NOT live-extension E2E evidence.
 It uses about:blank document content; no blocked URL or browser policy is bypassed.
 """
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import re,json,os,tempfile,base64,sys,time
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[2]
@@ -38,7 +40,8 @@ window.chrome={runtime:{id:'fixture-id',getManifest:()=>({version:'2.0.0'}),getU
   if(a==='pause')f.record.pausedUntil=Date.now()+300000;
   if(a==='resume')f.record.pausedUntil=0;
   if(a==='mode'){f.record.mode=m.mode;if(m.mode==='home')f.record.homeUrl=f.tab.url;}
-  if(a==='home')f.record.homeUrl=f.tab.url;
+  if(a==='home'){f.record.homeUrl=f.tab.url;f.record.recoveryTripped=false;}
+  if(a==='rearm-recovery')f.record.recoveryTripped=false;
   if(a==='destination')f.record.destination=m.destination;
   if(a==='foreground')f.record.foreground=m.foreground;
   broadcast();
@@ -74,10 +77,10 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
         try:fn();results.append({'name':name,'status':'PASS'});print('PASS',name,flush=True)
         except Exception as e:results.append({'name':name,'status':'FAIL','error':str(e)});print('FAIL',name,str(e),flush=True)
     def popup_default():
-        p=ui('popup');p.set_viewport_size({'width':392,'height':600});assert p.locator('#status-title').inner_text()=='This tab stays put.';assert p.evaluate('document.body.clientHeight')<=600;assert p.evaluate('document.documentElement.scrollWidth')<=392;p.locator('.popup').screenshot(path=str(OUT/'source-popup.png'));p.close()
+        p=ui('popup');p.set_viewport_size({'width':392,'height':600});assert p.locator('#status-title').inner_text()=='Link protection is on';assert p.evaluate('document.body.clientHeight')<=600;assert p.evaluate('document.documentElement.scrollWidth')<=392;p.locator('.popup').screenshot(path=str(OUT/'source-popup.png'));p.close()
     test('Rendered popup fits a 392x600 viewport with accessible scrolling',popup_default)
     def popup_controls():
-        p=ui('popup');p.locator('[data-mode="same-origin"]').click();assert p.evaluate('__fixture.record.mode')=='same-origin';p.locator('[data-foreground="false"]').click();assert p.evaluate('__fixture.record.foreground') is False;p.locator('#pause').click();assert p.locator('#status-title').inner_text()=='Taking a short break';p.locator('#pause').click();assert p.locator('#status-title').inner_text()=='This tab stays put.';p.close()
+        p=ui('popup');p.locator('[data-mode="same-origin"]').click();assert p.evaluate('__fixture.record.mode')=='same-origin';p.locator('[data-foreground="false"]').click();assert p.evaluate('__fixture.record.foreground') is False;p.locator('#pause').click();assert p.locator('#status-title').inner_text()=='Taking a short break';p.locator('#pause').click();assert p.locator('#status-title').inner_text()=='Link protection is on';p.close()
     test('Popup mode, opening preference, pause and resume wire to runtime requests',popup_controls)
     def popup_manual():
         p=ui('popup');p.locator('#toggle').click();assert p.evaluate('__fixture.record.override') is False;p.locator('#toggle').click();assert p.evaluate('__fixture.record.override') is True;p.locator('#automatic').click();assert p.evaluate('__fixture.record.override===undefined');p.locator('#settings').click();assert p.evaluate('__fixture.optionsOpened');p.close()
@@ -85,6 +88,23 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
     def popup_home():
         p=ui('popup');p.locator('[data-mode="home"]').click();assert p.locator('#home-row').is_visible();assert p.locator('#home-url').inner_text()=='https://dashboard.example.com/';p.locator('#set-home').click();assert p.evaluate('__fixture.record.homeUrl')=='https://dashboard.example.com/';p.close()
     test('Home URL control captures and displays current fixture URL',popup_home)
+    def recovery_control():
+        p=ui('popup',patch={'recovery':True});p.evaluate("__fixture.record.recoveryTripped=true;__fixture.record.homeUrl='https://dashboard.example.com/saved';")
+        p.locator('[data-mode="strict"]').click();assert p.locator('#recovery-notice').is_visible();p.locator('#rearm-recovery').click()
+        assert p.locator('#recovery-notice').is_hidden();assert p.evaluate('__fixture.record.homeUrl')=='https://dashboard.example.com/saved';p.close()
+    test('Recovery can be re-enabled in strict mode without changing the saved home',recovery_control)
+    def busy_state():
+        p=ui('popup');p.evaluate("() => {const original=chrome.runtime.sendMessage;chrome.runtime.sendMessage=async m=>{if(m.type==='UI_TAB'){__fixture.tab.url='chrome://settings/';}return original(m)};}")
+        p.locator('[data-mode="strict"]').click();assert p.locator('[data-mode="strict"]').get_attribute('aria-busy') is None
+        assert p.locator('[data-mode="strict"]').is_disabled();p.close()
+    test('Completed requests preserve controls disabled by the latest page state',busy_state)
+    def closed_tab():
+        p=ui('popup');p.evaluate("() => {chrome.runtime.sendMessage=async()=>({ok:true,settings:__fixture.settings,version:'2.0.0',error:'This tab is no longer available.'});}")
+        p.locator('[data-mode="strict"]').click();assert p.locator('#status-title').inner_text()=='Choose a webpage'
+        for selector in ['#solo','#copy','#destination','#use-browsing','[data-mode="strict"]']:
+            assert p.locator(selector).is_disabled()
+        p.close()
+    test('Popup disables tab actions when the source tab has closed',closed_tab)
     def settings():
         p=ui('options');p.locator('#foreground').select_option('false');assert p.evaluate('__fixture.settings.foreground') is False;p.locator('#branchHashes').check();assert p.evaluate('__fixture.settings.branchHashes') is True;p.locator('#rule-origin').fill('https://app.example.com/private');p.locator('#rule-mode').select_option('same-origin');p.locator('#rule-form button').click();assert p.locator('.rule-item code').inner_text()=='https://app.example.com';p.locator('.rule-item button').click();assert p.locator('.empty').is_visible();p.close()
     test('Settings controls and normalized-origin add/remove are functional',settings)
@@ -165,6 +185,14 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
     def form_password():
         p=guard(patch={'protectGetForms':True});p.locator('#pass-submit').click();assert count(p)==0;p.close()
     test('DOM password-containing GET form is left native',form_password)
+    def external_password():
+        p=guard(patch={'protectGetForms':True},extra='<input form="get" name="secret" type="password" value="fixture">')
+        p.locator('#get-submit').click();assert count(p)==0;assert p.evaluate('__fixture.native.filter(x=>x.type==="submit").length')==1;p.close()
+    test('DOM externally associated password field keeps GET form native',external_password)
+    def base_target():
+        p=guard(patch={'protectGetForms':True},extra='<base target="_blank">')
+        p.locator('#get-submit').click();assert count(p)==0;assert p.evaluate('__fixture.native.filter(x=>x.type==="submit").length')==1;p.close()
+    test('DOM GET form honors inherited base target',base_target)
     def reconnect():
         p=guard();p.add_script_tag(content=(ROOT/'src/content/guard.js').read_text());p.add_script_tag(content=(ROOT/'src/content/guard.js').read_text());p.locator('#normal').click();p.wait_for_function('__fixture.opened.length===1');assert p.evaluate('__fixture.listeners.length')==1;p.close()
     test('DOM reinjection is idempotent; one gesture makes one request',reconnect)
@@ -196,7 +224,7 @@ with tempfile.TemporaryDirectory(prefix='anchor-render-') as home, sync_playwrig
     p=context.new_page();html=(ROOT/'tests/fixtures/index.html').read_text();html=re.sub(r'<script\b[^>]*>.*?</script>','',html,flags=re.S);html=re.sub(r'<link\b[^>]*>','',html);html=re.sub(r'<iframe.*?</iframe>','',html,flags=re.S);html=html.replace('<body>','<body class="hide-tests">');html=html.replace('</head>','<style>'+(ROOT/'tests/fixtures/fixture.css').read_text()+'</style></head>');p.set_content(html);p.screenshot(path=str(OUT/'source-dashboard.png'));p.close()
     version=b.version
     b.close()
-report={'version':'2.0.0','date':'2026-10-03','browser':'Chromium '+version,'method':'Actual shipped DOM/UI scripts, rendered in about:blank with explicitly mocked Chrome extension APIs. NOT installed-extension E2E. No policy changes or blocked URL navigation.', 'tests':results,'passed':sum(r['status']=='PASS' for r in results),'failed':sum(r['status']=='FAIL' for r in results)}
+report={'version':'2.0.0','date':datetime.now(ZoneInfo('America/Regina')).date().isoformat(),'browser':'Chromium '+version,'method':'Actual shipped DOM/UI scripts, rendered in about:blank with explicitly mocked Chrome extension APIs. NOT installed-extension E2E. No policy changes or blocked URL navigation.', 'tests':results,'passed':sum(r['status']=='PASS' for r in results),'failed':sum(r['status']=='FAIL' for r in results)}
 (ROOT/'docs/ui-dom-test-results.json').write_text(json.dumps(report,indent=2)+'\n')
 print(f"\n{report['passed']} passed; {report['failed']} failed",flush=True)
 sys.exit(1 if report['failed'] else 0)

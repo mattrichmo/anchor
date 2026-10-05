@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
-  "date": "2026-10-03",
-  "browser": "Chromium 144.0.7559.96",
+  "date": "2026-10-05",
+  "browser": "Chromium 151.0.7922.173",
   "method": "Actual shipped DOM/UI scripts, rendered in about:blank with explicitly mocked Chrome extension APIs. NOT installed-extension E2E. No policy changes or blocked URL navigation.",
   "tests": [
     {
@@ -18,6 +18,18 @@
     },
     {
       "name": "Home URL control captures and displays current fixture URL",
+      "status": "PASS"
+    },
+    {
+      "name": "Recovery can be re-enabled in strict mode without changing the saved home",
+      "status": "PASS"
+    },
+    {
+      "name": "Completed requests preserve controls disabled by the latest page state",
+      "status": "PASS"
+    },
+    {
+      "name": "Popup disables tab actions when the source tab has closed",
       "status": "PASS"
     },
     {
@@ -121,6 +133,14 @@
       "status": "PASS"
     },
     {
+      "name": "DOM externally associated password field keeps GET form native",
+      "status": "PASS"
+    },
+    {
+      "name": "DOM GET form honors inherited base target",
+      "status": "PASS"
+    },
+    {
       "name": "DOM reinjection is idempotent; one gesture makes one request",
       "status": "PASS"
     },
@@ -157,6 +177,6 @@
       "status": "PASS"
     }
   ],
-  "passed": 38,
+  "passed": 43,
   "failed": 0
 }

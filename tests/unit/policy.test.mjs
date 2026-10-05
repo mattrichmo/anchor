@@ -65,9 +65,9 @@ test('branch follows prior branch',()=>assert.equal(C.insertionIndex(tabs,tabs[0
 test('branch placement end',()=>assert.equal(C.insertionIndex(tabs,tabs[0],null,'end'),5));
 test('unpinned manual source placement',()=>assert.equal(C.insertionIndex(tabs,tabs[4],null,'nearby'),5));
 test('closed prior branch ignored',()=>assert.equal(C.insertionIndex(tabs,tabs[0],999,'nearby'),3));
-for(const type of ['typed','auto_bookmark','generated','keyword','keyword_generated'])
+for(const type of ['typed','auto_bookmark','generated','keyword','keyword_generated','link','start_page'])
  test(`recovery candidate: ${type}`,()=>assert.equal(C.shouldRecover({frameId:0,transitionType:type}),true));
-for(const type of ['link','form_submit','reload','auto_subframe','start_page'])
+for(const type of ['form_submit','reload','auto_subframe'])
  test(`recovery excludes: ${type}`,()=>assert.equal(C.shouldRecover({frameId:0,transitionType:type}),false));
 for(const qualifier of ['forward_back','server_redirect','client_redirect'])
  test(`recovery excludes qualifier ${qualifier}`,()=>assert.equal(C.shouldRecover({frameId:0,transitionType:'typed',transitionQualifiers:[qualifier]}),false));

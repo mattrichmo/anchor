@@ -12,13 +12,20 @@ function render(next) {
   $('destination-help').textContent=next.workspaceId?'Workspace-managed. Change routing in Workspaces.':$('destination').value==='current-window'?'A new tab opens here; existing tabs are not replaced.':$('destination').value==='new-window'?'Each eligible link gets its own normal Chrome window.':next.browsingWindowId?'Your chosen browsing window will be reused.':'A browsing window is created on the first routed link.';
   $('return-source').hidden=!next.sourceTabId;
   for(const b of document.querySelectorAll('[data-foreground]')) {b.setAttribute('aria-pressed',String((next.snapshot?.foreground??next.settings.foreground)===(b.dataset.foreground==='true')));b.disabled=!!next.workspaceId;}
-  if(!s||!t){$('status-title').textContent='Choose a webpage';$('domain').textContent='Open an http:// or https:// page to get started.';$('badge').textContent='Unavailable';return;}
+  const missing=!s||!t;
+  for(const node of document.querySelectorAll('[data-mode],[data-foreground],#destination,#toggle,#pause,#automatic,#solo,#copy,#use-browsing,#set-home,#rearm-recovery'))node.disabled=missing;
+  $('recovery-notice').hidden=missing||!next.settings.recovery||!s.recoveryTripped;
+  if(missing){$('connection').hidden=true;$('home-row').hidden=true;$('status-title').textContent='Choose a webpage';$('domain').textContent='Open an http:// or https:// page to get started.';$('badge').textContent='Unavailable';return;}
   let host;try{host=new URL(t.url).host||t.url;}catch{host=t.url;}
   $('domain').textContent=host;$('domain').title=t.url;
   const unavailable=s.reason==='unsupported';
+  $('destination').disabled=unavailable||!!next.workspaceId;
+  for(const b of document.querySelectorAll('[data-foreground]'))b.disabled=unavailable||!!next.workspaceId;
+  $('set-home').disabled=unavailable;
+  $('rearm-recovery').disabled=unavailable||!s.active;
   const effective=s.active&&next.connected;
   const titles={unsupported:'Not available here',disabled:'Anchor is switched off','site-off':'Excluded by site rule',paused:'Taking a short break','tab-off':'Protection is off',unprotected:'Make this your anchor'};
-  $('status-title').textContent=s.active?(next.connected?'This tab stays put.':'Page needs a connection'):titles[s.reason]||'Ready when you are';
+  $('status-title').textContent=s.active?(next.connected?'Link protection is on':'Page needs a connection'):titles[s.reason]||'Ready when you are';
   $('badge').textContent=effective?(t.pinned?'Pinned':'Manual'):s.reason==='paused'?'Paused':'Not active';
   $('badge').classList.toggle('off',!effective);
   const mode=s.mode;
@@ -32,10 +39,10 @@ function render(next) {
   $('automatic').disabled=unavailable||!!next.workspaceId;
   $('solo').disabled=unavailable||!!next.workspaceId;
   $('copy').disabled=unavailable;
-  $('use-browsing').disabled=!!next.workspaceId;
+  $('use-browsing').disabled=unavailable||!!next.workspaceId;
   $('connection').hidden=!(s.active&&!next.connected);
   $('connection-text').textContent='Allow site access in Chrome, then reconnect. A page refresh may be needed.';
-  $('foot-note').textContent=s.recoveryTripped?'Address-bar recovery was used. Reset home to re-arm it.':
+  $('foot-note').textContent=s.recoveryTripped?'Navigation recovery is paused after one attempt. Check this page before enabling it again.':
     s.reason==='site-off'?'Remove this site’s exclusion in Settings to protect it.':
     s.reason==='disabled'?'Switch Anchor on in Settings to resume protection.':
     s.reason==='paused'?'Protection resumes automatically after five minutes.':
@@ -52,6 +59,7 @@ $('settings').addEventListener('click',()=>chrome.runtime.openOptionsPage());
 $('toggle').addEventListener('click',e=>busy(e.currentTarget,()=>change({type:'UI_TAB',action:state.snapshot.active?'unprotect':'protect'})));
 $('pause').addEventListener('click',e=>busy(e.currentTarget,()=>change({type:'UI_TAB',action:state.snapshot.reason==='paused'?'resume':'pause'})));
 $('automatic').addEventListener('click',e=>busy(e.currentTarget,()=>change({type:'UI_TAB',action:'automatic'})));
+$('rearm-recovery').addEventListener('click',e=>busy(e.currentTarget,()=>change({type:'UI_TAB',action:'rearm-recovery'})));
 $('set-home').addEventListener('click',e=>busy(e.currentTarget,()=>change({type:'UI_TAB',action:'home'})));
 $('reconnect').addEventListener('click',e=>busy(e.currentTarget,()=>change({type:'UI_RECONNECT'})));
 $('auto').addEventListener('change',e=>busy(null,()=>change({type:'UI_SETTINGS',patch:{protectPinned:e.target.checked}})));

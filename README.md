@@ -1,92 +1,126 @@
-# Anchor 2.0 — Protected Workspaces
+# Anchor
 
 **Keep your place. Explore somewhere else.**
 
-Anchor protects eligible links on pinned or manually protected webpages, routes exploration into the destination you choose, and arranges small dashboard workspaces. Everything runs locally. No account, analytics, remote scripts, runtime dependencies, or backend.
+Anchor is a Chrome extension for keeping a dashboard, project page, or other working tab open while you follow links. Eligible links open in a new tab, a separate window, or a browsing window you choose. You can also save up to four pages as a workspace and arrange their Chrome windows together.
 
-**This is an installable development/beta handoff, not a published or browser-certified release.** Read `docs/TEST-REPORT.md` for exact evidence and the remaining installed-browser acceptance gate.
+No account or subscription. Settings stay on your device. No analytics or Anchor backend.
 
-## Install the included build
+<img src="store/screenshots/source-popup.png" alt="Anchor popup showing link protection, navigation modes, and controls for where links open" width="392">
 
-1. Disable the old Pinned Tab Link Guard / old Anchor copy so two guards cannot intercept the same click.
-2. Extract this ZIP to a folder you will keep. Open `chrome://extensions` and enable Developer mode.
-3. Select **Load unpacked** and choose **`Anchor/extension`**, not the project root or a ZIP.
-4. Refresh existing dashboards. Right-click the actual webpage tab and choose **Pin**. Pinning Anchor's toolbar icon is a different action.
-5. Open Anchor's popup. Confirm the page is connected before relying on link protection. An `ON` badge requires a current-document guard acknowledgement; `!` indicates a connection needs attention.
+*Anchor’s popup. Screenshots use sample pages and local browser API fixtures; they show the interface, not a live customer dashboard.*
 
-No build, npm install, server, API key or account is needed to use the prebuilt extension folder. Chrome 123+ is the declared minimum; target-browser acceptance still needs to be run.
+## Install in Chrome
 
-### Updating your existing unpacked installation
+This repository includes an unpacked **2.0.0 beta** for Chrome 123 or later. A Chrome Web Store installation link is not available yet.
 
-Export settings from the old Settings page first. To preserve its extension identity/settings, close any old workspace arrangements, replace the contents of the **same existing unpacked extension directory** with this package's `extension/` contents, then click its Reload icon in `chrome://extensions`. Refresh open webpages afterward. Loading a different folder may create a separate extension identity: disable the old copy, then import its settings into the new one. Anchor 1.x settings schema 1 remains supported; new routing defaults to the previous same-window behavior. Version 2 workspace exports are separate from preference exports.
+1. [Download the repository ZIP](https://github.com/mattrichmo/anchor/archive/refs/heads/main.zip) and extract it into a folder you’ll keep. If you already cloned the repository, use that folder.
+2. Open `chrome://extensions` and turn on **Developer mode**.
+3. Click **Load unpacked** and select the **`extension`** folder inside the extracted repository. Select the folder containing `manifest.json`.
+4. Refresh webpages that were already open. Disable any older Anchor copy so only one is active.
+5. Open a normal webpage, right-click its Chrome tab, and select **Pin**. Click Anchor’s toolbar icon and look for **Link protection is on**.
 
-Saved workspace definitions persist locally. Tab/window/document bindings belong to the current browser session. Extension reload/disable/browser restart can invalidate them: opening a saved workspace may create fresh pages. Anchor does not silently match personal tabs by URL or recover unsaved application memory.
+You can pin Anchor’s toolbar icon through Chrome’s puzzle-piece menu to make it easier to find. Protecting a page requires pinning the **webpage tab**, or choosing **Protect this tab** in Anchor’s popup.
 
-## The three workflows
+The included extension works without installing Node, Python, or other development tools. Keep its folder in place: Chrome loads the unpacked extension from there.
 
-### 1. Ordinary pinned-tab protection
+## Try it on one page
 
-The default is unchanged: pin a webpage and eligible ordinary left-click or Enter-activated links branch into a new tab. Manual protection also works on an unpinned page.
+Open a dashboard or project page you want to keep. Pin its tab, confirm protection in the popup, then click an ordinary link. By default, an eligible link opens in a new tab in the same window.
 
-Protection modes are **All links branch**, **Same origin**, and **Home URL**. Same origin means identical protocol, host and port, not all subdomains of a company. Home URL is an exact saved address; fragment-only links are native unless enabled separately.
+Choose **Where should links open?** to change that behavior:
 
-### 2. One dashboard, exploration elsewhere
+| Choice | What happens |
+| --- | --- |
+| New tab in this window | Each eligible link opens in a new tab beside your working page. |
+| New tab in my browsing window | Links collect in a separate browsing window. Anchor creates one when needed. |
+| A new window for each link | Each eligible link gets its own Chrome window. |
 
-In the popup, choose **Where should links open?**:
+Choose **Stay here** to keep working on the dashboard, or **Follow the link** to switch to the destination. To use an existing browsing window, open Anchor on a webpage in that window and select **Window & tab controls → Use this window for browsing links**.
 
-- **New tab in this window**: classic Anchor behavior.
-- **A new window for each link**: each eligible intercepted link creates a normal Chrome window.
-- **My browsing window**: new tabs accumulate in one designated window, never overwriting its existing tabs. Anchor creates one on the first link if none is selected.
+Want a dedicated dashboard window? Choose **Make dashboard window**. Anchor moves the current page into its own window when necessary, protects it, and saves a solo workspace. Links go to a browsing window while you stay on the dashboard.
 
-**Follow the link** and **Stay here** are independent focus choices. The operating system can still influence window focus.
+### Choose which links stay on the page
 
-Choose **Make dashboard window** for a one-click solo workspace. Anchor moves the actual existing page into a dedicated normal window when necessary, instead of closing it and reopening its URL. It manually protects the page and selects the original window as the browsing destination when other tabs remain there. If the page is already alone, that window is reserved in place. This flow defaults to staying on the dashboard.
+| Mode | Use it when… |
+| --- | --- |
+| All links branch | You want eligible links to open elsewhere. This is the default. |
+| Same origin | You want links within the same protocol, host, and port to stay here; other links open elsewhere. |
+| Home URL | You want only the exact saved home address to stay here. Choose **Use this page as home** to update it. |
 
-To set the ordinary, non-workspace browsing destination explicitly, visit that window's webpage and use **Window & tab controls → Use this window for browsing links**. Each saved workspace can choose its own destination in its editor.
+Same-page section links stay on the page by default. Settings offers optional handling for hash links and simple GET forms, plus site rules for exceptions.
 
-### 3. Four dashboards you can see together
+## Arrange a workspace
 
-Open **Workspaces**, name a workspace and add up to four existing pages or home URLs. Selected existing pages are adopted by tab identity and moved without a deliberate reload. Choose **2 × 2 grid**, **My browsing window**, **Stay on the dashboard**, then **Open & arrange**.
+A workspace saves one to four pages and their layout. You can save up to 20 workspaces.
 
-**The grid is four real Chrome windows arranged together, not four live tabs embedded inside one browser window.** Native four-pane composition, iframe embedding, and custom browser-shell features are not included.
+1. Open **Workspaces** from the popup and give your workspace a name.
+2. Add pages from **Choose an open page**, or add their home URLs. Selecting open pages lets Anchor move those live tabs without deliberately reloading them.
+3. Choose **One window**, **Side by side**, **Stacked**, **2 × 2 grid**, or **Focus + context**.
+4. Choose a browsing destination and whether to follow links or stay on the dashboards.
+5. Click **Open & arrange**.
 
-Other layouts: **One window** (multiple protected tabs, only the active tab visible), **Side by side**, **Stacked**, and **Focus + context**. All window frames remain Chrome/OS-owned. **Display & spacing** supports current-display layout without an additional permission; **Choose another display** requests optional `system.display` access for monitor names/work areas. This is not screen capture.
+![Workspace editor with four sample pages and controls for layout, browsing destination, and focus](store/screenshots/05-workspaces-1280x800.png)
 
-**Save workspace** saves a definition. **Open & arrange** applies it, reuses known live anchor bindings, and reopens missing pages from saved home URLs only on this explicit request. **Arrange open pages** does not reopen missing pages. There is no automatic restore on startup.
+*The workspace editor with four sample pages.*
 
-Up to 20 workspaces, each with one to four pages. Window sizes must be usable: a cell smaller than 480×320 is rejected before creating/moving pages. Chrome and OS window managers may adjust geometry; Anchor reads bounds back and reports adjustments. Manual drags are not continuously snapped back. Moving an anchor out of a reserved workspace releases that membership.
+![Workspace arrangement preview illustrating four dashboard windows and a separate browsing destination](store/screenshots/06-layout-1280x800.png)
 
-## Reserved windows, not kiosk mode
+*The arrangement preview is an illustration. A grid opens four real Chrome windows; One window keeps several tabs together, with one visible at a time.*
 
-Workspace routing is separate from ordinary page protection. With **Reserve dashboard windows** enabled, supported browser-created extra tabs in a reserved window are moved intact to the workspace's destination. This covers many native Cmd/Ctrl-click, middle-click and `target=_blank` results without replaying their navigation. The newly created tab may briefly appear before relocation.
+**Save workspace** saves your choices without moving windows. **Open & arrange** applies them and opens saved URLs for missing pages. **Arrange open pages** rearranges the currently bound pages without reopening closed ones. Saved workspaces stay available after restarting Chrome; live bindings can be lost, so opening a workspace may create fresh pages.
 
-Likely sign-in flows, unsupported browser-owned pages, ambiguous blank tabs, and explicitly dragged-in tabs are handled conservatively rather than forcibly ejected. A new browser window opened by a native Shift-click is already outside the dashboard and is not commandeered. An extra native tab can remain when moving it cannot be confirmed. Status notices explain the known cases.
+With **Reserve dashboard windows** enabled, Anchor also moves supported newly created extra tabs out of dashboard windows. This helps with Ctrl/Cmd-click, middle-click, and new-tab links. A tab may briefly appear before moving. Sign-in pages and browser-owned tabs may stay where Chrome opened them.
 
-Use **Pause 5 minutes** for sign-in or maintenance. Use **Release workspace** to restore prior per-tab protection choices and remove reservations. Release/delete/reset do not close or reload browser pages. A previously pinned page may remain protected under normal Anchor defaults after release. Closing an anchor never triggers automatic resurrection.
+Use **Display & spacing** to adjust the layout. **Choose another display** requests permission to read monitor information. Small screens may require fewer pages or the One window layout; Chrome and your operating system may adjust window sizes and focus.
 
-**Working copy** opens the current address separately; it does not clone unsaved application state. **Return to original anchor** follows a local branch relationship, without guessing by URL or reopening a closed source. The relationship journal is session-only and bounded.
+## Pause, return, and back up
 
-## What this does not promise
+- **Pause 5 min** lets navigation stay in the current tab while you sign in or maintain a page. Protection resumes automatically; **Resume now** ends the pause early.
+- **Return to original anchor** switches from a routed tab back to its source, if that source is still open.
+- **Working copy** opens the current address separately. Unsaved edits and application memory are not copied.
+- **Release workspace** leaves pages open and restores their earlier protection choices. A pinned page may still be protected automatically.
+- Export preferences from **Settings → Your data**, and workspace definitions from **Workspaces**. These are separate JSON files. Review saved URLs for private paths or tokens before sharing them.
 
-Anchor is link protection, not a browser navigation firewall, read-only mode or data-loss-prevention tool. JavaScript-only buttons, automatic redirects, address-bar changes, browser back/forward, reloads and application side effects are not universally prevented. An app can change data or log out without navigating. A capture listener cannot neutralize all earlier page handlers. Pausing is the explicit escape hatch for apps that require native behavior.
+## Troubleshooting
 
-Modifier clicks, downloads, already-new-context link targets, `mailto:`/`tel:`, editable content, POST forms, and password/file forms remain native at the link-interception layer. Simple GET forms are opt-in. Same-frame iframe navigation is native; eligible top-escaping iframe links can be guarded where Chrome permits injection. Closed shadow roots/custom JS controls are not universally inspectable.
+| What you see | What to try |
+| --- | --- |
+| A connection warning or `!` badge | Allow Anchor’s site access in Chrome’s extension controls, then choose **Reconnect this page**. Refresh the webpage if needed. |
+| A pinned page is unprotected | Confirm you pinned the webpage tab. Check that Anchor is enabled, automatic pinned-tab protection is on, and the site has no exclusion rule. |
+| A login or application control behaves unexpectedly | Pause protection before using it. Some sites depend on navigation in the original tab. |
+| Links switch you away from the dashboard | Select **Stay here** in the popup. Workspace pages use the workspace’s focus setting. |
+| A new tab remains in a dashboard window | Sign-in/browser-owned tabs and uncertain moves are left open. Check the workspace notice and browsing destination. |
+| Recovery works once, then stops | Recovery disarms after one attempt. Check the current page, then choose **Enable recovery again** in the popup. |
+| A workspace cannot fit on the display | Choose fewer pages, a larger display, or **One window**. |
+| An interrupted-operation notice appears | Check all open windows before allowing a retry. An earlier request may already have created a page. |
+| Chrome refuses Load unpacked | Your browser or organization may restrict extension installation. Use a browser profile where unpacked extensions are permitted. |
 
-Optional address-bar/bookmark recovery remains **experimental and off by default**. It observes selected committed typed/bookmark navigations, branches and attempts to reload the previous URL once until re-armed. It is not a synchronous veto and cannot restore unsaved memory. It does not automatically replay POST bodies, auth redirects or arbitrary SPA history.
+## What to expect from URL protection
 
-Pinning and page messaging are asynchronous. Revisions, document checks and pointer/focus preflight harden state delivery, but an immediate click before a formerly unprotected page receives the new pinned state is not atomically preventable. Wait for connected protection; after upgrades/reloads, refresh the webpage. Known-protected disconnected clicks are cancelled with a notice, not silently replayed.
+Anchor protects eligible ordinary link clicks. Address-bar edits, Back/Forward, reloads, redirects, and JavaScript-only navigation can still change a working page. An `ON` badge confirms the page’s link guard is connected; it does not mean every navigation is blocked. After pinning a page, wait for connected protection before following links.
 
-## Data and permissions
+**Navigation recovery** is experimental and off by default in Settings. It can open an eligible address-bar, bookmark, missed link, or start-page destination separately and reload the previous URL. That happens after navigation starts: unsaved work may already be lost. Recovery stops after one attempt per tab until you enable it again. Forms, redirects, Back/Forward, reloads, and same-page SPA changes are excluded.
 
-Preferences, exact-origin rules, workspace names/home URLs and display preference IDs are in `chrome.storage.local`. Runtime bindings, limited local navigation/protection state, gesture IDs, branch provenance, pending operations and layout readback are in `chrome.storage.session`. Chrome retains normal browsing history according to its own settings. Nothing is sent to an Anchor server; visited sites receive normal browser requests.
+Downloads, links that already target another tab, modifier clicks, protocol links such as `mailto:`, and POST/password/file forms keep their browser behavior. Simple GET-form protection is optional. Chrome internal pages, the Chrome Web Store, and incognito are unsupported.
 
-Exports can contain private paths or tokens you put into saved home URLs. Review before sharing. No passwords, form bodies, screenshot captures or analytics payloads are persisted. Review `docs/PRIVACY.md` and `store/PRIVACY-AND-PERMISSIONS.md`.
+## Privacy and permissions
 
-Required permissions: `storage`, `scripting`, `contextMenus`, `alarms`, `webNavigation`, plus HTTP/HTTPS host access. Optional: `system.display`. No `tabs`, `history`, `cookies`, `debugger`, `tabCapture`, `desktopCapture` or `webRequest` permission. The tab/window APIs used here do not require a separate generic `windows` permission. Incognito is disabled. Host access is significant; the store justification explains why it is required for automatic protection on arbitrary pinned sites.
+Preferences and saved workspaces are stored locally. Temporary session storage holds live page/window bindings and limited navigation context. Anchor does not send this information to its developer; sites you visit receive normal browser requests.
 
-## Development and verification
+HTTP/HTTPS site access lets Anchor protect links on the pages you choose. Other permissions support local storage, page reconnection, menus, timed pauses, and navigation observation. Optional monitor access is used for workspace arrangement. Anchor does not read your cookie or password stores, record screens, or load remote runtime scripts.
 
-Node 20+ and Python 3.10+ are development tools only. JavaScript ES modules use no runtime package dependencies.
+Read the [privacy notes](docs/PRIVACY.md) and [permission details](store/PRIVACY-AND-PERMISSIONS.md).
+
+## Update an unpacked installation
+
+Export preferences and workspaces first. Replace the contents of the **same extension folder** you originally loaded, click **Reload** in `chrome://extensions`, and refresh open webpages. Using the same folder helps preserve the extension’s identity and settings.
+
+Loading a different folder may create a separate installation. Disable the old copy and import your backups into the new one. Reloading or restarting can invalidate live workspace bindings; save any unsaved work before reopening saved pages.
+
+## For contributors
+
+Source files live in `src/` and `public/`; the build copies them to `extension/`. Edit source files and rebuild rather than editing only the generated extension. Node 20+ and Python 3.10+ are development tools.
 
 ```sh
 npm run check
@@ -94,17 +128,12 @@ python -m pip install -r tests/e2e/requirements.txt
 python -m playwright install chromium
 npm run test:ui
 npm run test:e2e
-npm run package
 ```
 
-`npm run test:ui` renders the real UI and guard with explicit mocked Chrome APIs; it is not installed-extension evidence. `npm run test:e2e` installs the built extension into a fresh temporary allowed Chromium profile and starts the local fixture server. Exit code 2 means startup was blocked/unavailable, not a pass. Never bypass enterprise policies. `CHROME_BIN` selects a permitted Chromium executable; `ANCHOR_HEADED=1` enables a headed run. Linux CI may use `xvfb-run`.
+`npm run check` runs unit tests, builds the extension, and validates its manifest and assets. UI tests render the real interface with mocked Chrome APIs. Installed-extension E2E is a separate check; exit code 2 means startup was unavailable, not a pass. `CHROME_BIN` can select a permitted Chromium executable.
 
-`npm run demo` serves local navigation fixtures at `http://127.0.0.1:8765`. `examples/workspace-local-demo.json` supplies four local demo pages; start the server before explicitly opening it. Fixture outcomes are not customer or production data.
+Installed-extension acceptance remains open in this managed environment because the extension service worker does not load. Real Chrome, operating-system window arrangement, and real-dashboard checks are still needed. See the [test report](docs/TEST-REPORT.md) and [manual acceptance checklist](docs/MANUAL-ACCEPTANCE.md).
 
-Build copies `public/` and `src/` to `extension/`. Edit source, not only the generated folder. Packaging produces `release/anchor-2.0.0-complete.zip` and `release/anchor-2.0.0-chrome-store.zip`, without dependencies or font binaries. The store ZIP contains `manifest.json` at its root.
+For local navigation fixtures, run `npm run demo`. For packaging, run `npm run package`; store submission is a separate step.
 
-## Handoff map
-
-`extension/` installable build · `src/` readable modules · `public/` UI/manifest · `brand/` original SVG/PNG assets · `website/` static landing/support/privacy pages · `store/` copy/declarations/images/upload ZIP · `tests/` policy, worker, DOM and live-browser suites · `docs/` architecture, safety, behavior and evidence · `examples/` import fixture · `scripts/` reproducible build/package/art tooling.
-
-Publisher details prepared for Matt Richmond (`hello@mattrichmond.ca`). Hosting URLs, store ID, account certifications, name/mark clearance and final distribution remain owner decisions. No submission, hosting or external account change was performed.
+Questions or reproducible issues: [hello@mattrichmond.ca](mailto:hello@mattrichmond.ca). Include your Anchor version, Chrome version, operating system, and redacted steps. Keep credentials and confidential URLs out of reports.

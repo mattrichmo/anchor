@@ -53,7 +53,7 @@ function renderEditor(){
   $('workspace-name').value=draft.name;$('workspace-destination').value=draft.destination;
   $('workspace-foreground').value=String(draft.foreground);$('workspace-reserved').checked=draft.reserved;
   if(![...$('gap').options].some(o=>Number(o.value)===draft.gap))$('gap').append(option(draft.gap,`${draft.gap} px`));
-  $('gap').value=String(draft.gap);$('save-note').textContent='Saved locally. Nothing is uploaded.';
+  $('gap').value=String(draft.gap);$('save-note').textContent=state.library.items.some(w=>w.id===draft.id)?'Saved locally. Nothing is uploaded.':'New workspace. Add pages, then save or open it.';
   windowOptions(false);renderAnchors();renderLayout();renderLive();
   $('delete-workspace').hidden=!state.library.items.some(w=>w.id===draft.id);
 }
@@ -102,7 +102,7 @@ function renderLive(){
   const live=$('live-pages');live.replaceChildren();
   for(const a of draft.anchors){
     if(!run?.anchors?.[a.id])continue;
-    const row=element('div','live-page');row.append(element('span',null,a.label));const focus=element('button','quiet-button','Go to page ↗');focus.addEventListener('click',()=>busy(focus,()=>request({type:'UI_FOCUS_ANCHOR',workspaceId:draft.id,anchorId:a.id})));row.append(focus);live.append(row);
+    const row=element('div','live-page');row.append(element('span',null,a.label));const focus=element('button','quiet-button','Go to page');focus.addEventListener('click',()=>busy(focus,()=>request({type:'UI_FOCUS_ANCHOR',workspaceId:draft.id,anchorId:a.id})));row.append(focus);live.append(row);
   }
   if(run?.notice)live.append(element('p','helper',run.notice));
   if(run?.lastLayout?.warnings?.length)live.append(element('p','helper',run.lastLayout.warnings.join(' ')));

@@ -11,7 +11,7 @@ function storage(name){return {
 }}
 const origin='https://dashboard.example.com';
 let openTabs=[{id:1,url:origin+'/',title:'Dashboard',pinned:true,index:0,windowId:1,active:true}];
-let created=[],createFailure=false,nextId=10,frameDocument='doc-1',frameLifecycle='active';
+let created=[],createFailure=false,nextId=10,frameDocument='doc-1',frameLifecycle='active',afterCreate=null;
 const id='abcdefghijklmnopabcdefghijklmnop';
 globalThis.chrome={
  runtime:{id,getURL:path=>`chrome-extension://${id}/${path}`,getManifest:()=>({version:'1.0.0'}),onMessage:event(),onInstalled:event(),onStartup:event()},
@@ -19,7 +19,7 @@ globalThis.chrome={
  tabs:{
  query:async query=>clone(openTabs.filter(t=>query.windowId===undefined||t.windowId===query.windowId)),
  get:async tabId=>{const t=openTabs.find(t=>t.id===tabId);if(!t)throw new Error('No tab');return clone(t)},
- create:async props=>{if(createFailure)throw new Error('Chrome creation failure');const t={...props,id:nextId++,title:'Branch'};created.push(t);openTabs.push(t);return clone(t)},
+ create:async props=>{if(createFailure)throw new Error('Chrome creation failure');const t={...props,id:nextId++,title:'Branch'};created.push(t);openTabs.push(t);afterCreate?.();return clone(t)},
  update:async(tabId,props)=>{const t=openTabs.find(t=>t.id===tabId);Object.assign(t,props);return clone(t)},
  sendMessage:async()=>({ok:true}),onUpdated:event(),onActivated:event(),onRemoved:event(),onReplaced:event()
  },
@@ -36,7 +36,7 @@ const uiSender={id,url:chrome.runtime.getURL('ui/options.html')};
 const contentSender=()=>({id,tab:clone(openTabs[0]),url:origin+'/',documentId:'doc-1',frameId:0});
 function send(message,sender=uiSender){return new Promise((resolve,reject)=>{const claimed=listener(message,sender,resolve);if(!claimed)resolve({ignored:true})})}
 async function reset(){
- openTabs=[{id:1,url:origin+'/',title:'Dashboard',pinned:true,index:0,windowId:1,active:true}];created=[];createFailure=false;frameDocument='doc-1';frameLifecycle='active';
+ openTabs=[{id:1,url:origin+'/',title:'Dashboard',pinned:true,index:0,windowId:1,active:true}];created=[];createFailure=false;frameDocument='doc-1';frameLifecycle='active';afterCreate=null;
  await send({type:'UI_RESET'});
 }
 const intent=(suffix='a')=>({type:'ANCHOR_OPEN_LINK',kind:'link',url:origin+'/detail',intentId:'gesture-id-0000000'+suffix});
@@ -66,3 +66,56 @@ test('worker: local settings persist without a sync store',async()=>{await reset
 test('worker: serialized settings writes preserve independent fields',async()=>{await reset();await Promise.all([send({type:'UI_SETTINGS',patch:{foreground:false}}),send({type:'UI_SETTINGS',patch:{mode:'home'}})]);assert.equal(state.settings.foreground,false);assert.equal(state.settings.mode,'home');});
 test('worker: reset removes manual override and origin exceptions',async()=>{await reset();await send({type:'UI_TAB',tabId:1,action:'unprotect'});await send({type:'UI_SETTINGS',patch:{rules:[{origin,mode:'off'}]}});const r=await send({type:'UI_RESET',tabId:1});assert.equal(r.snapshot.active,true);assert.equal(r.settings.rules.length,0);});
 test('worker: gesture journal is bounded under repeated clicks',async()=>{await reset();for(let i=0;i<90;i++)await send(intent(String(i)),contentSender());assert(Object.keys(stores.session['tab:1'].intents).length<=80);});
+
+async function navigation(eventName, details) {
+ chrome.webNavigation[eventName].listeners[0](details);
+ await new Promise(resolve=>setImmediate(resolve));
+ await state.withTab(1,async()=>{});
+}
+async function prepareRecovery() {
+ await reset();await send({type:'UI_SETTINGS',patch:{recovery:true}});
+ await navigation('onBeforeNavigate',{tabId:1,frameId:0,url:origin+'/detail'});
+ openTabs[0].url=origin+'/detail';frameDocument='doc-detail';
+ return {tabId:1,frameId:0,url:origin+'/detail',documentId:'doc-detail',transitionType:'link',transitionQualifiers:[]};
+}
+test('worker: missed link navigation recovers once and disarms',async()=>{
+ const details=await prepareRecovery();await navigation('onCommitted',details);
+ assert.equal(created.length,1);assert.equal(created[0].url,details.url);
+ assert.equal(openTabs[0].url,origin+'/');assert.equal(stores.session['tab:1'].recoveryTripped,true);
+});
+test('worker: superseded commit does not branch or overwrite URL tracking',async()=>{
+ const details=await prepareRecovery();openTabs[0].url=origin+'/newer';frameDocument='doc-newer';
+ await navigation('onCommitted',details);
+ assert.equal(created.length,0);assert.equal(openTabs[0].url,origin+'/newer');
+ assert.equal(stores.session['tab:1'].currentUrl,origin+'/');
+});
+test('worker: navigation during destination creation is not rolled back',async()=>{
+ const details=await prepareRecovery();afterCreate=()=>{openTabs[0].url=origin+'/newer';frameDocument='doc-newer';};
+ await navigation('onCommitted',details);
+ assert.equal(created.length,1);assert.equal(openTabs[0].url,origin+'/newer');
+});
+test('worker: pending second navigation is not replaced by recovery',async()=>{
+ const details=await prepareRecovery();afterCreate=()=>{openTabs[0].pendingUrl=origin+'/newer';};
+ await navigation('onCommitted',details);
+ assert.equal(created.length,1);assert.equal(openTabs[0].url,details.url);
+ assert.equal(openTabs[0].pendingUrl,origin+'/newer');
+});
+test('worker: stale same-document event cannot overwrite current URL',async()=>{
+ await reset();openTabs[0].url=origin+'/latest';
+ await navigation('onHistoryStateUpdated',{tabId:1,frameId:0,url:origin+'/stale',documentId:'doc-1'});
+ assert.equal(stores.session['tab:1'].currentUrl,origin+'/');
+ await navigation('onHistoryStateUpdated',{tabId:1,frameId:0,url:origin+'/latest',documentId:'doc-1'});
+ assert.equal(stores.session['tab:1'].currentUrl,origin+'/latest');
+});
+test('worker: form navigation is never replayed by recovery',async()=>{
+ const details=await prepareRecovery();details.transitionType='form_submit';
+ await navigation('onCommitted',details);assert.equal(created.length,0);
+ assert.equal(openTabs[0].url,details.url);assert(!stores.session['tab:1'].recoveryTripped);
+});
+
+test('worker: rearming recovery preserves saved home and mode',async()=>{
+ const details=await prepareRecovery();await navigation('onCommitted',details);
+ const record=state.recordFor(openTabs[0]);record.homeUrl=origin+'/saved-home';record.mode='strict';await state.persist(1,record);
+ const result=await send({type:'UI_TAB',tabId:1,action:'rearm-recovery'});
+ assert.equal(result.snapshot.recovery,true);assert.equal(result.snapshot.homeUrl,origin+'/saved-home');assert.equal(result.snapshot.mode,'strict');
+});

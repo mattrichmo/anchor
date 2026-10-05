@@ -1,5 +1,25 @@
 # Anchor 2.0.0 — build and acceptance report
 
+## 5 October 2026 — navigation and experience review
+
+The local checkout was reviewed against GitHub main at `df81dfc`. The current changes are local and uncommitted; no public release is claimed.
+
+| Check | Result |
+| --- | --- |
+| Unit policy, schema, layout, and worker checks | 229 passed, 0 failed |
+| Rendered popup, settings, and content guard checks | 43 passed, 0 failed |
+| Rendered workspace editor checks | 18 passed, 0 failed |
+| Build, extension validation, README local links/images, and diff whitespace | Passed |
+| Installed-extension startup (5 October navigation review) | Blocked: no service worker appeared; no E2E cases executed |
+
+Unit suites were also executed individually to capture all case counts with the current Node runner. Rendered checks use explicit Chrome API fixtures; they verify DOM behavior and trusted gestures, not installed-extension or OS window behavior. The screenshots linked in the README were refreshed from these fixtures.
+
+New regressions cover missed-link recovery, superseded commits, navigation during destination creation, pending second navigation, stale same-document observations, excluded forms, externally associated password fields, inherited form targets, re-enabling recovery without changing home or mode, preserving disabled controls after requests, closed-tab controls, and a new workspace’s unsaved status. The popup reports link protection precisely and provides a visible recovery re-enable control in every mode.
+
+The following section records the original handoff. Its counts and environment details are historical; the JSON UI evidence now reflects the latest run.
+
+## Original 3 October handoff
+
 Date: **3 October 2026**. Status: **implemented beta handoff; automated local checks passed; installed-browser acceptance remains open.**
 
 ## Results actually obtained

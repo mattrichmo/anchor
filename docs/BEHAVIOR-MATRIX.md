@@ -18,7 +18,7 @@
 | Link-driven SPA | Guarded when eligible before router handler | No universal control over earlier handlers/custom buttons. |
 | JS-only location/history/button route | Not universally intercepted | History observed, not blindly rolled back. |
 | Same-frame iframe link | Native | Eligible `_top` escapes can branch with site access. |
-| Address bar/bookmark | Native by default | Experimental selected recovery off by default; reload cannot recover memory. |
+| Address bar/bookmark | Native by default | Experimental selected recovery off by default, including missed same-tab links/start-page navigations; reload cannot recover memory. |
 | Solo dashboard action | Adopts live page; moves only when needed | Manual protection, no deliberate reload. |
 | One-window workspace | Chosen pages together in normal Chrome tabs | Only active tab visible; no tiled compositor. |
 | 2×2 / columns / rows / focus | Real top-level Chrome window arrangement | OS may adjust requested bounds. |

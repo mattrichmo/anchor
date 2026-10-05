@@ -118,7 +118,7 @@
     if (details.frameId !== 0) return false;
     const q = details.transitionQualifiers || [];
     if (q.includes('forward_back') || q.includes('server_redirect') || q.includes('client_redirect')) return false;
-    return ['typed', 'auto_bookmark', 'generated', 'keyword', 'keyword_generated'].includes(details.transitionType);
+    return ['typed', 'auto_bookmark', 'generated', 'keyword', 'keyword_generated', 'link', 'start_page'].includes(details.transitionType);
   }
   globalThis.AnchorCore = Object.freeze({DEFAULTS, MODES, webUrl, supported, fragmentOnly,
     normalizeOrigin, validateSettings, makeSnapshot, decide, insertionIndex, shouldRecover});

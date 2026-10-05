@@ -4,7 +4,7 @@ const bools=['enabled','protectPinned','branchHashes','protectGetForms','recover
 const labels={off:'Protection off',strict:'All links branch','same-origin':'Keep same-origin links here',home:'Keep only the saved home URL here'};
 function saved(text='Saved locally'){$('saved').textContent=text;clearTimeout(savedTimer);savedTimer=setTimeout(()=>$('saved').textContent='',2200);}
 function render(next){
- state=next;$('version').textContent=next.version;
+ state=next;$('version').textContent=next.version;$('footer-version').textContent=next.version;
  for(const key of bools)$(key).checked=next.settings[key];
  for(const key of ['mode','foreground','placement','destination'])$(key).value=String(next.settings[key]);
  const list=$('rule-list');list.replaceChildren();

@@ -10,10 +10,12 @@ export function showError(error) {
   box.hidden = false;
 }
 export function clearError() { if ($('error')) $('error').hidden = true; }
+const pendingButtons = new WeakSet();
 export async function busy(button, fn) {
+  if (button && (button.disabled || pendingButtons.has(button))) return;
   clearError();
-  if (button) button.disabled = true;
-  try {await fn();}catch(error){showError(error);}finally{if(button)button.disabled=false;}
+  if (button) {pendingButtons.add(button);button.setAttribute('aria-busy','true');}
+  try {await fn();}catch(error){showError(error);}finally{if(button){pendingButtons.delete(button);button.removeAttribute('aria-busy');}}
 }
 export function downloadJson(name, value) {
   const blob = new Blob([JSON.stringify(value,null,2)+'\n'],{type:'application/json'});

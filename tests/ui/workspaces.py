@@ -2,6 +2,8 @@
 No extension installation, network navigation, or policy changes occur here.
 """
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import ast,re,json,os,tempfile,base64,sys
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[2]; OUT=ROOT/'store/screenshots'
@@ -77,6 +79,10 @@ with tempfile.TemporaryDirectory(prefix='anchor-workspace-ui-') as home,sync_pla
     def choose_pages():
         p=page();add(p);assert p.locator('.anchor-editor').count()==4;assert p.locator('#add-open-tab').is_disabled();assert p.locator('.adopt-note').count()==4;assert p.locator('.preview-panel').count()==4;p.close()
     test('Four existing pages can be selected for move-without-reload adoption',choose_pages)
+    def new_workspace_note():
+        p=page();assert p.locator('#save-note').inner_text()=='New workspace. Add pages, then save or open it.'
+        add(p,1);save(p);assert p.locator('#save-note').inner_text()=='Saved locally.';p.close()
+    test('New workspace only reports saved after it has been saved',new_workspace_note)
     def edit_save_again():
         p=page();add(p,1);save(p);p.get_by_label('Page 1 label',exact=True).fill('Changed after save');save(p);assert p.evaluate('__fixture.library.items[0].anchors[0].label')=='Changed after save';p.close()
     test('Edits made after saving remain bound to the live draft and persist on a second save',edit_save_again)
@@ -129,7 +135,7 @@ with tempfile.TemporaryDirectory(prefix='anchor-workspace-ui-') as home,sync_pla
     test('Workspace UI renders at 390/768/1280px without horizontal overflow; capture labelled demo screens',screenshots)
     test('No uncaught JavaScript errors occurred in the rendered workspace UI',lambda:(_ for _ in ()).throw(AssertionError(errors)) if errors else None)
     version=browser.version;browser.close()
-report={'version':'2.0.0','date':'2026-10-03','browser':'Chromium '+version,'method':'Real workspace UI and validation scripts, explicit mocked Chrome API fixtures on about:blank. No installed-extension behavior or OS window movement is proven.','tests':results,'passed':sum(x['status']=='PASS' for x in results),'failed':sum(x['status']=='FAIL' for x in results)}
+report={'version':'2.0.0','date':datetime.now(ZoneInfo('America/Regina')).date().isoformat(),'browser':'Chromium '+version,'method':'Real workspace UI and validation scripts, explicit mocked Chrome API fixtures on about:blank. No installed-extension behavior or OS window movement is proven.','tests':results,'passed':sum(x['status']=='PASS' for x in results),'failed':sum(x['status']=='FAIL' for x in results)}
 (ROOT/'docs/workspace-ui-test-results.json').write_text(json.dumps(report,indent=2)+'\n')
 print(f"{report['passed']} passed; {report['failed']} failed")
 sys.exit(1 if report['failed'] else 0)

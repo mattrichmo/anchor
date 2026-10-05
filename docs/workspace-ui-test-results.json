@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
-  "date": "2026-10-03",
-  "browser": "Chromium 144.0.7559.96",
+  "date": "2026-10-05",
+  "browser": "Chromium 151.0.7922.173",
   "method": "Real workspace UI and validation scripts, explicit mocked Chrome API fixtures on about:blank. No installed-extension behavior or OS window movement is proven.",
   "tests": [
     {
@@ -10,6 +10,10 @@
     },
     {
       "name": "Four existing pages can be selected for move-without-reload adoption",
+      "status": "PASS"
+    },
+    {
+      "name": "New workspace only reports saved after it has been saved",
       "status": "PASS"
     },
     {
@@ -73,6 +77,6 @@
       "status": "PASS"
     }
   ],
-  "passed": 17,
+  "passed": 18,
   "failed": 0
 }
