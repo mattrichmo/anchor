@@ -2,7 +2,7 @@
 
 **Keep your place. Explore somewhere else.**
 
-Anchor is a Chrome extension that protects **pinned tabs from link navigation**. When you follow an eligible link, Anchor opens the destination elsewhere so your pinned page keeps its place.
+Anchor adds **navigation protection to pinned Chrome tabs**. Keep a dashboard, inbox, project, or reference page in place while you explore: eligible link clicks open their destinations elsewhere instead of replacing your pinned page.
 
 Start with a pinned tab, then choose how much of your browser to organize:
 
@@ -20,7 +20,7 @@ No account or subscription. Settings stay on your device. No analytics or Anchor
 
 ## Install in Chrome
 
-This repository includes an unpacked **2.0.0 beta** for Chrome 123 or later. A Chrome Web Store installation link is not available yet.
+This repository includes an unpacked **2.0.0 beta** for Chrome 123 or later. A Chrome Web Store installation link is not available yet. Known protection and workspace edge cases are tracked in the [hardening review](docs/HARDENING-REVIEW.md).
 
 1. [Download the repository ZIP](https://github.com/mattrichmo/anchor/archive/refs/heads/main.zip) and extract it into a folder you’ll keep. If you already cloned the repository, use that folder.
 2. Open `chrome://extensions` and turn on **Developer mode**.
@@ -31,6 +31,23 @@ This repository includes an unpacked **2.0.0 beta** for Chrome 123 or later. A C
 You can pin Anchor’s toolbar icon through Chrome’s puzzle-piece menu to make it easier to find. Protecting a page requires pinning the **webpage tab**, or choosing **Protect this tab** in Anchor’s popup.
 
 The included extension works without installing Node, Python, or other development tools. Keep its folder in place: Chrome loads the unpacked extension from there.
+
+## What happens when a pinned tab tries to navigate?
+
+With **All links branch** selected and connected protection:
+
+| Action | What Anchor does today |
+| --- | --- |
+| Ordinary link click or Enter on an eligible link | Opens the destination separately and keeps the original document in place. |
+| Address-bar edit or bookmark | Leaves Chrome’s navigation native by default. Optional recovery can reload the previous URL after selected navigations. |
+| Back/Forward, reload, redirect, or custom JavaScript navigation | Can still change the original page; complete prevention is not implemented. |
+| Same-page section or hash link | Stays on the page by default; branching hash links is optional. |
+| Form submission | Stays native by default. Simple GET forms can be protected; POST/password/file forms retain browser behavior. |
+| Ctrl/Cmd-click, middle-click, or a link targeting a new tab | Keeps normal browser behavior. Reserved workspace windows can move supported resulting tabs outside. |
+
+Choose **Same origin** or **Home URL** when you want to allow selected links to stay in the original tab. Pause protection for sign-in or maintenance.
+
+The goal is to keep working pages anchored across navigation paths. The current beta covers eligible link actions and selected recovery; it does not yet provide an all-navigation lock. [Read the product audit](docs/PRODUCT-AUDIT.md) for the remaining coverage work.
 
 ## Try it on one page
 
@@ -76,7 +93,7 @@ A workspace saves one to four pages and their layout. You can save up to 20 work
 
 *The arrangement preview is an illustration. A grid opens four real Chrome windows; One window keeps several tabs together, with one visible at a time.*
 
-**Save workspace** saves your choices without moving windows. **Open & arrange** applies them and opens saved URLs for missing pages. **Arrange open pages** rearranges the currently bound pages without reopening closed ones. Saved workspaces stay available after restarting Chrome; live bindings can be lost, so opening a workspace may create fresh pages.
+**Save workspace** saves your choices without moving windows. **Open & arrange** applies them and opens saved URLs for missing pages. **Arrange open pages** rearranges the currently bound pages and refuses to proceed if any saved page is missing; use **Open & arrange** when you want to reopen those pages. Saved workspaces stay available after restarting Chrome; live bindings can be lost, so opening a workspace may create fresh pages.
 
 With **Reserve dashboard windows** enabled, Anchor also moves supported newly created extra tabs out of dashboard windows. This helps with Ctrl/Cmd-click, middle-click, and new-tab links. A tab may briefly appear before moving. Sign-in pages and browser-owned tabs may stay where Chrome opened them.
 
@@ -127,6 +144,9 @@ Export preferences and workspaces first. Replace the contents of the **same exte
 Loading a different folder may create a separate installation. Disable the old copy and import your backups into the new one. Reloading or restarting can invalidate live workspace bindings; save any unsaved work before reopening saved pages.
 
 ## For contributors
+
+The [hardening review](docs/HARDENING-REVIEW.md) records the prioritized next steps, source evidence, and proposed regression checks from independent read-only reviews. Navigation coverage and dependable protection state come first.
+
 
 Source files live in `src/` and `public/`; the build copies them to `extension/`. Edit source files and rebuild rather than editing only the generated extension. Node 20+ and Python 3.10+ are development tools.
 
