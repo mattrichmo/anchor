@@ -1,22 +1,18 @@
-# Anchor — pinned tab protection and workspaces
+# Anchor
 
-**Keep your place. Explore somewhere else.**
+Keep a dashboard, inbox, or reference page open while you follow links.
 
-Anchor adds **navigation protection to pinned Chrome tabs**. Keep a dashboard, inbox, project, or reference page in place while you explore: eligible link clicks open their destinations elsewhere instead of replacing your pinned page.
+Pinning a Chrome tab makes it easy to find, but clicking a link can still replace the page inside it. Anchor keeps that working page in place and opens supported links in another tab or window. You choose whether to follow the new page or stay where you are.
 
-Start with a pinned tab, then choose how much of your browser to organize:
+Use it for one reference page, or save a workspace of up to four pages and arrange their Chrome windows together. A project board, an inbox, and a dashboard can each keep their place while you browse from them.
 
-- **Protect a page:** automatically protect pinned tabs, or manually protect any working tab.
-- **Separate exploration:** open links in a new tab, a new window, or a designated browsing window; choose whether to follow them or stay on the original page.
-- **Build a workspace:** save up to four protected pages, arrange their Chrome windows, and send new browsing outside the dashboard windows.
+<img src="docs/acceptance-screenshots/connected-protection-popup.png" alt="Anchor popup showing connected link protection and a choice of where supported links open" width="392">
 
-Chrome’s own Pin command keeps a tab handy but still lets it navigate. Anchor adds protection for eligible links. Address-bar changes and some other navigation paths remain outside that protection; see [URL protection](#what-to-expect-from-url-protection).
+*The popup, captured with the installed extension on a local test page.*
 
-No account or subscription. Settings stay on your device. No analytics or Anchor backend.
+Settings and workspaces stay on your device. No account, subscription, analytics, or Anchor backend.
 
-<img src="store/screenshots/source-popup.png" alt="Anchor popup showing link protection, navigation modes, and controls for where links open" width="392">
-
-*Anchor’s popup. Screenshots use sample pages and local browser API fixtures; they show the interface, not a live customer dashboard.*
+**Current scope:** Anchor protects supported link actions. Typing a new address, using Back or Forward, and some website navigation can still change the original page. See [URL protection](#what-to-expect-from-url-protection) for the details.
 
 ## Install in Chrome
 
@@ -87,7 +83,7 @@ A workspace saves one to four pages and their layout. You can save up to 20 work
 
 ![Workspace editor with four sample pages and controls for layout, browsing destination, and focus](store/screenshots/05-workspaces-1280x800.png)
 
-*The workspace editor with four sample pages.*
+*The workspace editor with four sample pages. Browser responses are simulated for this screenshot.*
 
 ![Workspace arrangement preview illustrating four dashboard windows and a separate browsing destination](store/screenshots/06-layout-1280x800.png)
 
@@ -160,7 +156,7 @@ npm run test:e2e
 
 `npm run check` runs unit tests, builds the extension, and validates its manifest and assets. UI tests render the real interface with mocked Chrome APIs. Installed-extension E2E is a separate check; exit code 2 means startup was unavailable, not a pass. `CHROME_BIN` can select a permitted Chromium executable.
 
-Installed-extension acceptance remains open in this managed environment because the extension service worker does not load. Real Chrome, operating-system window arrangement, and real-dashboard checks are still needed. See the [test report](docs/TEST-REPORT.md) and [manual acceptance checklist](docs/MANUAL-ACCEPTANCE.md).
+The [test report](docs/TEST-REPORT.md) records automated checks, an installed Chrome run, and the remaining acceptance work. Actual address-bar recovery failed manual acceptance. Extension reload/update readiness, window arrangements, and real-dashboard checks remain open; see the [manual acceptance checklist](docs/MANUAL-ACCEPTANCE.md).
 
 For local navigation fixtures, run `npm run demo`. For packaging, run `npm run package`; store submission is a separate step.
 
